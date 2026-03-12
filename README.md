@@ -95,10 +95,10 @@ The game tick thread never blocks on network I/O — a dedicated background thre
 
 The project is split into four phases:
 
-### Phase 1 — C# RimWorld Mod
+### Phase 1 — C# RimWorld Mod ✅
 The mod itself. A `GameComponent` fires every 15 seconds, runs all metric collectors, serializes to OTLP Protobuf, and enqueues for background HTTP delivery. Harmony patches intercept game events and emit log records. No full OpenTelemetry SDK — just `Google.Protobuf` and a focused raw OTLP/HTTP sender to avoid Mono/Unity runtime conflicts.
 
-**36 items** covering: project scaffold, OTLP transport, metric collectors (colonists, resources, infrastructure, threats, world), and 7 Harmony event patches.
+**36 items** — complete. See [v0.1.0 release](https://github.com/manuelnagele/rimworld-otel-exporter/releases/tag/v0.1.0).
 
 ### Phase 2 — OTLP Gateway Connection
 Configuring and validating the connection between the mod and your Grafana infrastructure. Covers auth (Bearer token / API key), Mimir/Loki tenant headers, smoke testing with `curl`/`otel-cli`, and the choice between direct gateway or local Alloy relay.
@@ -161,13 +161,16 @@ Once metrics are flowing:
 
 ## Building from Source
 
+Requires .NET SDK 8+ and RimWorld installed.
+
 ```bash
 # Clone
 git clone git@github.com:manuelnagele/rimworld-otel-exporter.git
 cd rimworld-otel-exporter
 
-# Set RimWorld install path (macOS default used if unset)
-export RIMWORLD_DIR="/Applications/RimWorld.app/Contents/MacOS"
+# macOS Steam (default — no env var needed)
+# Windows Steam: set RIMWORLD_DIR="C:\Program Files (x86)\Steam\steamapps\common\RimWorld"
+# Linux Steam:   export RIMWORLD_DIR="$HOME/.steam/steam/steamapps/common/RimWorld"
 
 # Build mod DLL → outputs to Assemblies/
 cd Source/RimWorldOtelExporter
@@ -178,19 +181,29 @@ cd ../../Tests/RimWorldOtelExporter.Tests
 dotnet test
 ```
 
+The build automatically copies all required runtime DLLs to `Assemblies/`:
+
+| DLL | Purpose |
+|-----|---------|
+| `RimWorldOtelExporter.dll` | The mod |
+| `Google.Protobuf.dll` | OTLP Protobuf serialization |
+| `System.Memory.dll` | Span/Memory polyfills for Mono |
+| `System.Buffers.dll` | Buffer polyfills for Mono |
+| `System.Runtime.CompilerServices.Unsafe.dll` | Required by System.Memory on Mono |
+
 ---
 
 ## Project Status
 
-> Work in progress. Implementation has not started yet — this repo is the scaffold.
-
 - [x] Project structure and build setup
-- [ ] OTLP transport layer (serializer, sender, queue)
-- [ ] ModSettings UI
-- [ ] GameComponent heartbeat
-- [ ] Metric collectors (colonists, resources, infrastructure, threats, world)
-- [ ] Harmony event patches
-- [ ] Grafana dashboard JSON
+- [x] OTLP transport layer (serializer, sender, queue with backoff + circuit breaker)
+- [x] ModSettings UI (endpoint, auth, interval, per-category toggles, live status)
+- [x] GameComponent heartbeat
+- [x] Metric collectors — colonists, resources, infrastructure, threats, world (30 metrics)
+- [x] Harmony event patches — incidents, deaths, research, mental breaks, trades, relationships
+- [x] Unit tests (12/12 passing)
+- [x] v0.1.0 release published
+- [ ] Grafana dashboard JSON (`grafana/colony-overview.json`)
 - [ ] Steam Workshop publication
 
 See [`CLAUDE.md`](CLAUDE.md) for the full implementation checklist and technical reference.

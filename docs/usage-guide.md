@@ -130,8 +130,12 @@ otelcol.processor.batch "default" {
        │   └── About.xml
        └── Assemblies/
            ├── RimWorldOtelExporter.dll
-           └── Google.Protobuf.dll
+           ├── Google.Protobuf.dll
+           ├── System.Memory.dll
+           ├── System.Buffers.dll
+           └── System.Runtime.CompilerServices.Unsafe.dll
    ```
+   The three `System.*` DLLs are Mono polyfills required at runtime — they must be present alongside the main DLL.
 4. Enable the mod in-game with Harmony above it in load order
 
 ---

@@ -56,7 +56,21 @@
     <Reference Include="System.Net.Http" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
     <PackageReference Include="Lib.Harmony" Version="2.3.6" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />
-    <PackageReference Include="Google.Protobuf" Version="3.25.3" />
+    <PackageReference Include="Google.Protobuf" Version="3.15.8" />
+    <!-- Ship these with the mod so Mono can resolve ReadOnlySequence<T> -->
+    <PackageReference Include="System.Memory" Version="4.5.5" />
+    <PackageReference Include="System.Buffers" Version="4.5.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
   </ItemGroup>
+
+  <!-- Copy runtime polyfill DLLs that Mono doesn't bundle to Assemblies output -->
+  <Target Name="CopyRuntimePolyfills" AfterTargets="Build">
+    <ItemGroup>
+      <_PolyfillDlls Include="$(NuGetPackageRoot)system.memory/4.5.5/lib/net461/System.Memory.dll" />
+      <_PolyfillDlls Include="$(NuGetPackageRoot)system.buffers/4.5.1/lib/net461/System.Buffers.dll" />
+      <_PolyfillDlls Include="$(NuGetPackageRoot)system.runtime.compilerservices.unsafe/6.0.0/lib/net461/System.Runtime.CompilerServices.Unsafe.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_PolyfillDlls)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>
