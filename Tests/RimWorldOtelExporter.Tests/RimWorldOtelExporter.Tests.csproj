@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>9.0</LangVersion>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.25.3" />
+  </ItemGroup>
+
+  <!-- Reference source files directly without game assembly deps -->
+  <ItemGroup>
+    <Compile Include="..\..\Source\RimWorldOtelExporter\Transport\**\*.cs" />
+    <Compile Include="..\..\Source\RimWorldOtelExporter\Models\**\*.cs" />
+  </ItemGroup>
+
+</Project>

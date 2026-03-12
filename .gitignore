@@ -1,0 +1,23 @@
+# Build outputs
+Assemblies/*.dll
+!Assemblies/.gitkeep
+bin/
+obj/
+*.user
+
+# IDE
+.vs/
+.vscode/
+*.suo
+*.sln.docinfo
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# RimWorld save data (never commit these)
+*.rws
+
+# NuGet
+*.nupkg

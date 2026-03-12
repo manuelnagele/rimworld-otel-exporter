@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>RimWorld OpenTelemetry Exporter</name>
+  <author>manuelnagele</author>
+  <packageId>manuelnagele.rimworld.otelexporter</packageId>
+  <supportedVersions>
+    <li>1.5</li>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>
+Exports real-time colony telemetry via OpenTelemetry (OTLP/HTTP) to Grafana/Mimir/Loki.
+
+Track colonist mood, health, skills, needs, resource stockpiles, power grids, temperatures,
+threat points, faction goodwill, and all major game events as metrics and logs.
+
+Requires: OTLP-compatible endpoint (Grafana Agent/Alloy, or direct Mimir+Loki).
+
+See GitHub for companion Grafana dashboard JSON.
+  </description>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+</ModMetaData>
