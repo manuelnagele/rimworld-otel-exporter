@@ -25,7 +25,7 @@ namespace RimWorldOtelExporter.Collectors
             try
             {
                 int gridId = 0;
-                foreach (var net in map.powerNetManager.AllNets)
+                foreach (var net in map.powerNetManager.AllNetsListForReading)
                 {
                     float production = 0f, consumption = 0f, stored = 0f, maxStored = 0f;
 
@@ -34,12 +34,12 @@ namespace RimWorldOtelExporter.Collectors
                         float output = comp.PowerOutput;
                         if (output > 0) production += output;
                         else consumption += -output;
+                    }
 
-                        if (comp is CompPowerBattery battery)
-                        {
-                            stored += battery.StoredEnergy;
-                            maxStored += battery.Props.storedEnergyMax;
-                        }
+                    foreach (var battery in net.batteryComps)
+                    {
+                        stored += battery.StoredEnergy;
+                        maxStored += battery.Props.storedEnergyMax;
                     }
 
                     var gridAttrs = new[] { Attr("grid_id", gridId) };
@@ -65,7 +65,7 @@ namespace RimWorldOtelExporter.Collectors
             try
             {
                 var seenRoles = new HashSet<string>();
-                foreach (var room in map.regionGrid.allRooms)
+                foreach (var room in map.regionGrid.AllRooms)
                 {
                     if (room?.Role == null || room.IsHuge) continue;
                     string role = room.Role.defName;

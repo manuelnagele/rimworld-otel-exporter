@@ -53,7 +53,8 @@ namespace RimWorldOtelExporter.Collectors
         {
             try
             {
-                bool growing = PlantUtility.GrowingSeasonNow(map.Tile);
+                Season season = GenLocalDate.Season(map.Tile);
+                bool growing = season == Season.Spring || season == Season.Summer;
                 metrics.Add(GaugeLong("rimworld_growing_season_active", growing ? 1L : 0L, ts));
             }
             catch { }

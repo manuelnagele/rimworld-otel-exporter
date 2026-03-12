@@ -25,7 +25,7 @@ namespace RimWorldOtelExporter.HarmonyPatches
 
             try
             {
-                var pawnA = __instance.pawn;
+                var pawnA = Traverse.Create(__instance).Field("pawn").GetValue<Pawn>();
                 if (pawnA?.Faction != Faction.OfPlayer && otherPawn.Faction != Faction.OfPlayer) return;
 
                 string nameA = pawnA?.LabelShort ?? "unknown";

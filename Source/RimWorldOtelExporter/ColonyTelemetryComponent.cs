@@ -107,7 +107,7 @@ namespace RimWorldOtelExporter
                 colonyName = RimWorld.Faction.OfPlayer?.Name ?? "Unknown";
                 seed = Find.World?.info?.seedString ?? "0";
                 storyteller = Find.Storyteller?.def?.label ?? "Unknown";
-                difficulty = Find.Storyteller?.difficulty?.label ?? "Unknown";
+                difficulty = Find.Storyteller?.difficultyDef?.label ?? "Unknown";
             }
             catch { /* may not be fully loaded yet */ }
 

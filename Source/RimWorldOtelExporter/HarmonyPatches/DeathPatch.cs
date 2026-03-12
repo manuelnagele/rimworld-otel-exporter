@@ -21,7 +21,7 @@ namespace RimWorldOtelExporter.HarmonyPatches
                 bool isColonist = __instance.Faction == Faction.OfPlayer && __instance.RaceProps.Humanlike;
                 bool isNamedAnimal = __instance.Faction == Faction.OfPlayer
                     && !__instance.RaceProps.Humanlike
-                    && __instance.HasName;
+                    && __instance.Name != null;
 
                 if (!isColonist && !isNamedAnimal) return;
 

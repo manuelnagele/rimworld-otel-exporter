@@ -11,20 +11,20 @@ namespace RimWorldOtelExporter.HarmonyPatches
     [HarmonyPatch(typeof(IncidentWorker), "TryExecuteWorker")]
     public static class IncidentPatch
     {
-        public static void Postfix(IncidentParms parms, bool __result)
+        public static void Postfix(IncidentWorker __instance, IncidentParms parms, bool __result)
         {
             if (!__result) return;
             if (!OtelExporterMod.Settings.EnableEvents) return;
 
             try
             {
-                var def = parms?.raidStrategy?.def ?? parms?.faction?.def;
-                string incidentDef = parms?.def?.defName ?? "unknown";
+                IncidentDef iDef = __instance.def;
+                string incidentDef = iDef?.defName ?? "unknown";
                 string factionName = parms?.faction?.Name ?? "none";
                 float points = parms?.points ?? 0f;
 
-                bool isHostile = parms?.def?.category == IncidentCategoryDefOf.ThreatBig
-                    || parms?.def?.category == IncidentCategoryDefOf.ThreatSmall;
+                bool isHostile = iDef?.category == IncidentCategoryDefOf.ThreatBig
+                    || iDef?.category == IncidentCategoryDefOf.ThreatSmall;
 
                 string body = isHostile
                     ? $"Hostile incident: {incidentDef} ({points:F0} pts) from {factionName}"

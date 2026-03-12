@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using OpenTelemetry.Proto.Logs.V1;
+using RimWorld;
 using RimWorldOtelExporter.Transport;
 using Verse;
 
@@ -29,7 +30,7 @@ namespace RimWorldOtelExporter
         {
             try
             {
-                string gameVersion = VersionControl.CurrentVersionString ?? "unknown";
+                string gameVersion = RimWorld.VersionControl.CurrentVersionString ?? "unknown";
                 string modVersion = OtelExporterMod.Instance.Content.ModMetaData.ModVersion?.ToString() ?? "0.0.0";
                 string scenario = Find.Scenario?.name ?? "unknown";
                 string seed = Find.World?.info?.seedString ?? "0";

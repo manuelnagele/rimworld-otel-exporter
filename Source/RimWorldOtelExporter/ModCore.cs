@@ -1,4 +1,5 @@
 using System;
+using RimWorld;
 using UnityEngine;
 using Verse;
 using RimWorldOtelExporter.Transport;
@@ -94,11 +95,9 @@ namespace RimWorldOtelExporter
 
             listing.End();
 
-            if (GUI.changed)
-            {
-                OtelExporterCore.Sender?.Configure(Settings.AuthHeader, Settings.OrgId);
-                OtelExporterCore.Queue?.ResetCircuitBreaker();
-            }
+            // Always re-apply config on settings window draw (settings re-save resets circuit breaker)
+            OtelExporterCore.Sender?.Configure(Settings.AuthHeader, Settings.OrgId);
+            OtelExporterCore.Queue?.ResetCircuitBreaker();
         }
 
         public override string SettingsCategory() => "RimWorld OTel Exporter";

@@ -53,6 +53,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="System.Net.Http" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
     <PackageReference Include="Lib.Harmony" Version="2.3.6" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />
     <PackageReference Include="Google.Protobuf" Version="3.25.3" />

@@ -4,14 +4,15 @@ using OpenTelemetry.Proto.Logs.V1;
 using RimWorld;
 using RimWorldOtelExporter.Transport;
 using Verse;
+using Verse.AI;
 using static RimWorldOtelExporter.Transport.OtlpSerializer;
 
 namespace RimWorldOtelExporter.HarmonyPatches
 {
-    [HarmonyPatch(typeof(MentalStateHandler), "TryStartMentalState")]
+    [HarmonyPatch(typeof(Pawn_MindState), "TryStartMentalState")]
     public static class MentalBreakPatch
     {
-        public static void Postfix(MentalStateHandler __instance, MentalStateDef stateDef, bool __result)
+        public static void Postfix(Pawn_MindState __instance, MentalStateDef stateDef, bool __result)
         {
             if (!__result) return;
             if (!OtelExporterMod.Settings.EnableEvents) return;

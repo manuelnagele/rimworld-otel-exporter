@@ -18,14 +18,14 @@ namespace RimWorldOtelExporter.Collectors
 
             // rimworld_colonists_total by colonist_type
             int free = 0, prisoner = 0, slave = 0, guest = 0;
-            foreach (var pawn in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists)
+            foreach (var pawn in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists)
                 free++;
             foreach (var pawn in map.mapPawns.PrisonersOfColony)
                 prisoner++;
             try { foreach (var pawn in map.mapPawns.SlavesOfColonySpawned) slave++; } catch { }
-            foreach (var pawn in map.mapPawns.AnyColonyHumanlike)
+            foreach (var pawn in map.mapPawns.AllHumanlikeSpawned)
             {
-                if (pawn.guest?.IsGuest == true) guest++;
+                if (pawn.guest?.GuestStatus == GuestStatus.Guest) guest++;
             }
 
             metrics.Add(GaugeLong("rimworld_colonists_total", free, timestampNanos, new[] { Attr("colonist_type", "free") }));
@@ -139,7 +139,7 @@ namespace RimWorldOtelExporter.Collectors
             {
                 if (hediff is Hediff_Injury) injury++;
                 else if (hediff is Hediff_Addiction) addiction++;
-                else if (hediff is Hediff_AddedPart || hediff is Hediff_ImplantWithLevel) implant++;
+                else if (hediff is Hediff_AddedPart || hediff is Hediff_Implant) implant++;
                 else if (hediff.def?.chronic == true) chronic++;
                 else if (hediff.Visible && hediff.def?.makesSickThought == true) disease++;
             }
