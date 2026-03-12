@@ -6,32 +6,55 @@
     <RootNamespace>RimWorldOtelExporter</RootNamespace>
     <Nullable>enable</Nullable>
     <LangVersion>9.0</LangVersion>
-    <OutputPath>..\..\Assemblies</OutputPath>
+    <OutputPath>../../Assemblies</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- RimWorld References — set RIMWORLD_DIR env var or adjust path -->
+  <!-- RimWorld install paths per platform.
+       Override by setting RIMWORLD_DIR env var, e.g.:
+         export RIMWORLD_DIR="/path/to/RimWorldMac.app" -->
   <PropertyGroup>
     <RimWorldDir Condition="'$(RIMWORLD_DIR)' != ''">$(RIMWORLD_DIR)</RimWorldDir>
-    <RimWorldDir Condition="'$(RimWorldDir)' == '' AND $([MSBuild]::IsOSPlatform('OSX'))">/Applications/RimWorld.app/Contents/MacOS</RimWorldDir>
+    <!-- macOS Steam default -->
+    <RimWorldDir Condition="'$(RimWorldDir)' == '' AND $([MSBuild]::IsOSPlatform('OSX'))">$(HOME)/Library/Application Support/Steam/steamapps/common/RimWorld/RimWorldMac.app</RimWorldDir>
+    <!-- Windows Steam default -->
     <RimWorldDir Condition="'$(RimWorldDir)' == '' AND $([MSBuild]::IsOSPlatform('Windows'))">C:\Program Files (x86)\Steam\steamapps\common\RimWorld</RimWorldDir>
+    <!-- Linux Steam default -->
     <RimWorldDir Condition="'$(RimWorldDir)' == '' AND $([MSBuild]::IsOSPlatform('Linux'))">$(HOME)/.steam/steam/steamapps/common/RimWorld</RimWorldDir>
+  </PropertyGroup>
+
+  <!-- Managed DLL subfolder differs per platform -->
+  <PropertyGroup>
+    <RimWorldManaged Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(RimWorldDir)/Contents/Resources/Data/Managed</RimWorldManaged>
+    <RimWorldManaged Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(RimWorldDir)/RimWorldWin64_Data/Managed</RimWorldManaged>
+    <RimWorldManaged Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(RimWorldDir)/RimWorld_Data/Managed</RimWorldManaged>
+  </PropertyGroup>
+
+  <!-- Harmony workshop path (macOS Steam) -->
+  <PropertyGroup>
+    <HarmonyDir Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/2009463077/Current/Assemblies</HarmonyDir>
   </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(RimWorldDir)/RimWorldWin64_Data/Managed/Assembly-CSharp.dll</HintPath>
+      <HintPath>$(RimWorldManaged)/Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(RimWorldDir)/RimWorldWin64_Data/Managed/UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(RimWorldManaged)/UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Use Workshop Harmony on macOS, NuGet Lib.Harmony on other platforms -->
+    <Reference Include="0Harmony" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+      <HintPath>$(HarmonyDir)/0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lib.Harmony" Version="2.3.6" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
+    <PackageReference Include="Lib.Harmony" Version="2.3.6" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />
     <PackageReference Include="Google.Protobuf" Version="3.25.3" />
   </ItemGroup>
 
