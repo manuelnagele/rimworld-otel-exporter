@@ -49,6 +49,10 @@ namespace RimWorldOtelExporter.Collectors
 
                 var pawnAttrs = new[] { Attr("name", name), Attr("pawn_id", pawnId) };
 
+                // rimworld_colonist_age_years
+                if (pawn.ageTracker != null)
+                    metrics.Add(GaugeLong("rimworld_colonist_age_years", pawn.ageTracker.AgeBiologicalYears, timestampNanos, pawnAttrs));
+
                 // rimworld_colonist_mood
                 metrics.Add(GaugeDouble("rimworld_colonist_mood", pawn.needs.mood.CurLevel, timestampNanos, pawnAttrs));
 

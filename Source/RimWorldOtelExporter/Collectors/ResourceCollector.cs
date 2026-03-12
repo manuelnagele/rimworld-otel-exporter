@@ -46,8 +46,7 @@ namespace RimWorldOtelExporter.Collectors
 
         private static void CollectWealth(List<Metric> metrics, Map map, long ts)
         {
-            try { map.wealthWatcher.ForceRecount(); } catch { }
-
+            // Do NOT call ForceRecount() — it's expensive and the game updates wealth on its own cadence.
             metrics.Add(GaugeDouble("rimworld_colony_wealth", map.wealthWatcher.WealthItems, ts, new[] { Attr("wealth_type", "items") }));
             metrics.Add(GaugeDouble("rimworld_colony_wealth", map.wealthWatcher.WealthBuildings, ts, new[] { Attr("wealth_type", "buildings") }));
             metrics.Add(GaugeDouble("rimworld_colony_wealth", map.wealthWatcher.WealthPawns, ts, new[] { Attr("wealth_type", "pawns") }));
@@ -70,16 +69,17 @@ namespace RimWorldOtelExporter.Collectors
                 }
 
                 float totalConsumptionPerTick = 0f;
-                foreach (var pawn in map.mapPawns.FreeColonistsAndPrisoners)
+                // All humanlike mouths: colonists, prisoners, slaves
+                foreach (var pawn in map.mapPawns.AllHumanlikeSpawned)
                 {
                     if (pawn.needs?.food != null)
                         totalConsumptionPerTick += pawn.needs.food.FoodFallPerTick;
                 }
-                // Include tamed animals
+                // Tamed animals actually eat full rations from stockpiles
                 foreach (var pawn in map.mapPawns.PawnsInFaction(Faction.OfPlayer))
                 {
                     if (!pawn.RaceProps.Humanlike && pawn.needs?.food != null)
-                        totalConsumptionPerTick += pawn.needs.food.FoodFallPerTick * 0.5f; // animals eat less managed food
+                        totalConsumptionPerTick += pawn.needs.food.FoodFallPerTick;
                 }
 
                 float daysRemaining = totalConsumptionPerTick > 0

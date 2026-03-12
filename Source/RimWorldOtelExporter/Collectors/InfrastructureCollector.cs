@@ -64,17 +64,44 @@ namespace RimWorldOtelExporter.Collectors
 
             try
             {
-                var seenRoles = new HashSet<string>();
+                // Aggregate min/avg temperature and impressiveness per room role
+                var roleTemps = new Dictionary<string, (float sum, float min, int count)>();
+                var roleImpress = new Dictionary<string, (float sum, int count)>();
+
                 foreach (var room in map.regionGrid.AllRooms)
                 {
                     if (room?.Role == null || room.IsHuge) continue;
                     string role = room.Role.defName;
-                    if (!seenRoles.Add(role)) continue; // one sample per role type
+                    float temp = room.Temperature;
 
-                    metrics.Add(GaugeDouble("rimworld_temperature_room", room.Temperature, ts, new[]
+                    if (!roleTemps.ContainsKey(role))
+                        roleTemps[role] = (0f, float.MaxValue, 0);
+                    var t = roleTemps[role];
+                    roleTemps[role] = (t.sum + temp, temp < t.min ? temp : t.min, t.count + 1);
+
+                    try
                     {
-                        Attr("room_role", role)
-                    }));
+                        float impress = room.GetStat(RoomStatDefOf.Impressiveness);
+                        if (!roleImpress.ContainsKey(role))
+                            roleImpress[role] = (0f, 0);
+                        var i = roleImpress[role];
+                        roleImpress[role] = (i.sum + impress, i.count + 1);
+                    }
+                    catch { }
+                }
+
+                foreach (var kv in roleTemps)
+                {
+                    var (sum, min, count) = kv.Value;
+                    float avg = sum / count;
+                    metrics.Add(GaugeDouble("rimworld_temperature_room_min", min, ts, new[] { Attr("room_role", kv.Key) }));
+                    metrics.Add(GaugeDouble("rimworld_temperature_room_avg", avg, ts, new[] { Attr("room_role", kv.Key) }));
+                }
+
+                foreach (var kv in roleImpress)
+                {
+                    float avg = kv.Value.sum / kv.Value.count;
+                    metrics.Add(GaugeDouble("rimworld_room_impressiveness", avg, ts, new[] { Attr("room_role", kv.Key) }));
                 }
             }
             catch { }
