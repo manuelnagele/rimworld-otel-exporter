@@ -1,0 +1,786 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_LOKI",
+      "label": "Loki",
+      "type": "datasource",
+      "pluginId": "loki",
+      "pluginName": "Loki"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana",    "id": "grafana",    "name": "Grafana",    "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "datasource", "id": "loki",       "name": "Loki",       "version": "1.0.0" }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+        "enable": true,
+        "expr": "{service_name=\"rimworld-colony\"} | json | event_type=\"trade\"",
+        "hide": false,
+        "iconColor": "#8ec4a8",
+        "name": "Trade Events",
+        "step": "60s",
+        "titleFormat": "{{body}}",
+        "tagKeys": "event_type"
+      },
+      {
+        "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+        "enable": true,
+        "expr": "{service_name=\"rimworld-colony\"} | json | event_type=~\"incident|death\"",
+        "hide": false,
+        "iconColor": "#e898a8",
+        "name": "Raids & Deaths",
+        "step": "60s",
+        "titleFormat": "{{body}}",
+        "tagKeys": "event_type"
+      }
+    ]
+  },
+  "description": "RimWorld economy deep-dive — stockpiles, wealth, trade, and food supply.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Colony Command Center",
+      "tooltip": "Back to main dashboard",
+      "type": "link",
+      "url": "/d/rimworld-colony-v2"
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "tags": ["rimworld", "gaming", "homelab", "economy"],
+  "time": { "from": "now-12h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "RimWorld — Economy",
+  "uid": "rimworld-economy",
+  "version": 1,
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "label": "Prometheus",
+        "type": "datasource",
+        "pluginId": "prometheus",
+        "hide": 0,
+        "refresh": 1
+      },
+      {
+        "name": "DS_LOKI",
+        "label": "Loki",
+        "type": "datasource",
+        "pluginId": "loki",
+        "hide": 0,
+        "refresh": 1
+      },
+      {
+        "name": "item_category",
+        "label": "Category",
+        "type": "custom",
+        "query": "Food,Metal,Medicine,Textile,Manufactured,Other",
+        "current": { "text": "All", "value": "$__all" },
+        "options": [
+          { "text": "All",          "value": "$__all", "selected": true },
+          { "text": "Food",         "value": "Food" },
+          { "text": "Metal",        "value": "Metal" },
+          { "text": "Medicine",     "value": "Medicine" },
+          { "text": "Textile",      "value": "Textile" },
+          { "text": "Manufactured", "value": "Manufactured" },
+          { "text": "Other",        "value": "Other" }
+        ],
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+
+    {
+      "id": 201,
+      "type": "row",
+      "title": "Economy Overview",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 202,
+      "type": "stat",
+      "title": "Total Wealth",
+      "description": "Colony total wealth including items, buildings, and pawns.",
+      "gridPos": { "x": 0, "y": 1, "w": 4, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "textMode": "auto",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#8486d4" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#8486d4", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(rimworld_colony_wealth{wealth_type=\"total\"})",
+          "legendFormat": "",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 203,
+      "type": "stat",
+      "title": "Silver",
+      "description": "Current silver stockpile.",
+      "gridPos": { "x": 4, "y": 1, "w": 3, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#dcdff0" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#dcdff0", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_trade_silver_total",
+          "legendFormat": "",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 204,
+      "type": "stat",
+      "title": "Food Days",
+      "description": "Estimated days of food supply remaining.",
+      "gridPos": { "x": 7, "y": 1, "w": 3, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d",
+          "min": 0,
+          "max": 30,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#e898a8", "value": null },
+              { "color": "#d4b896", "value": 3 },
+              { "color": "#8ec4a8", "value": 7 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_food_days_remaining",
+          "legendFormat": "",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 205,
+      "type": "stat",
+      "title": "Food Items",
+      "description": "Total food item count in stockpiles.",
+      "gridPos": { "x": 10, "y": 1, "w": 3, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#8ec4a8" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#8ec4a8", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(rimworld_resource_stockpile{item_category=\"Food\"})",
+          "legendFormat": "",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 206,
+      "type": "stat",
+      "title": "Metal",
+      "description": "Total metal items in stockpiles.",
+      "gridPos": { "x": 13, "y": 1, "w": 3, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#d4b896" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#d4b896", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(rimworld_resource_stockpile{item_category=\"Metal\"})",
+          "legendFormat": "",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 207,
+      "type": "stat",
+      "title": "Medicine",
+      "description": "Total medicine items in stockpiles.",
+      "gridPos": { "x": 16, "y": 1, "w": 3, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#82b8c8" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#82b8c8", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(rimworld_resource_stockpile{item_category=\"Medicine\"})",
+          "legendFormat": "",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 208,
+      "type": "stat",
+      "title": "Manufactured",
+      "description": "Total manufactured items (components, etc.) in stockpiles.",
+      "gridPos": { "x": 19, "y": 1, "w": 5, "h": 3 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#b49ed4" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#b49ed4", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(rimworld_resource_stockpile{item_category=\"Manufactured\"})",
+          "legendFormat": "",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 209,
+      "type": "row",
+      "title": "Wealth Trends",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 210,
+      "type": "timeseries",
+      "title": "Wealth Composition",
+      "description": "Colony wealth broken down by items, buildings, and pawns over time.",
+      "gridPos": { "x": 0, "y": 5, "w": 16, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 40,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth",
+            "stacking": { "mode": "normal", "group": "A" }
+          },
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "items" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#8486d4" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "buildings" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#82b8c8" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "pawns" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#8ec4a8" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "total" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#dcdff0" } },
+              { "id": "custom.stacking", "value": { "mode": "none", "group": "A" } },
+              { "id": "custom.fillOpacity", "value": 0 },
+              { "id": "custom.lineWidth", "value": 2 }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_colony_wealth{wealth_type=\"items\"}",
+          "legendFormat": "items",
+          "instant": false,
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_colony_wealth{wealth_type=\"buildings\"}",
+          "legendFormat": "buildings",
+          "instant": false,
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_colony_wealth{wealth_type=\"pawns\"}",
+          "legendFormat": "pawns",
+          "instant": false,
+          "refId": "C"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(rimworld_colony_wealth{wealth_type=\"total\"})",
+          "legendFormat": "total",
+          "instant": false,
+          "refId": "D"
+        }
+      ]
+    },
+
+    {
+      "id": 211,
+      "type": "bargauge",
+      "title": "Wealth by Type (Current)",
+      "description": "Current wealth breakdown as horizontal bar gauge.",
+      "gridPos": { "x": 16, "y": 5, "w": 8, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "color",
+        "showUnfilled": true,
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "namePlacement": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#8486d4", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_colony_wealth",
+          "legendFormat": "{{wealth_type}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 212,
+      "type": "row",
+      "title": "Stockpile Trends",
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 213,
+      "type": "timeseries",
+      "title": "All Stockpile Items (Filtered by Category)",
+      "description": "All matching stockpile items. Use the Category variable to filter. Tooltip multi, sorted by last value.",
+      "gridPos": { "x": 0, "y": 15, "w": 24, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"], "sortBy": "lastNotNull", "sortDesc": true }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          },
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_resource_stockpile{item_category=~\"$item_category\"}",
+          "legendFormat": "{{item_label}}",
+          "instant": false,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 214,
+      "type": "row",
+      "title": "Key Resources",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 215,
+      "type": "timeseries",
+      "title": "Steel, Components & Plasteel",
+      "description": "Core building and crafting materials.",
+      "gridPos": { "x": 0, "y": 25, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          },
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_resource_stockpile{item_def=~\"Steel|ComponentIndustrial|ComponentSpacer|Plasteel\"}",
+          "legendFormat": "{{item_label}}",
+          "instant": false,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 216,
+      "type": "timeseries",
+      "title": "Medicine & Drugs",
+      "description": "Medical supplies and drugs in stockpile.",
+      "gridPos": { "x": 12, "y": 25, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          },
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_resource_stockpile{item_def=~\"Medicine|MedicineHerbal|MedicineUltratech|PenoxycylineTab|GoJuice|WakeUp|Flake|Yayo\"}",
+          "legendFormat": "{{item_label}}",
+          "instant": false,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 217,
+      "type": "row",
+      "title": "Food",
+      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 218,
+      "type": "timeseries",
+      "title": "Food Days Remaining",
+      "description": "Watch for downward trend — catch food crisis before it hits.",
+      "gridPos": { "x": 0, "y": 34, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 25,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          },
+          "unit": "d",
+          "min": 0,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#e898a8", "value": null },
+              { "color": "#d4b896", "value": 3 },
+              { "color": "#8ec4a8", "value": 7 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_food_days_remaining",
+          "legendFormat": "Food Days",
+          "instant": false,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 219,
+      "type": "timeseries",
+      "title": "Food Items by Type",
+      "description": "Individual food item counts over time, stacked.",
+      "gridPos": { "x": 12, "y": 34, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 40,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth",
+            "stacking": { "mode": "normal", "group": "A" }
+          },
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_resource_stockpile{item_category=\"Food\"}",
+          "legendFormat": "{{item_label}}",
+          "instant": false,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "id": 220,
+      "type": "row",
+      "title": "Trade & Silver",
+      "gridPos": { "x": 0, "y": 42, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 221,
+      "type": "timeseries",
+      "title": "Silver Over Time",
+      "description": "Drops indicate purchases, rises indicate sales.",
+      "gridPos": { "x": 0, "y": 43, "w": 24, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          },
+          "unit": "short",
+          "min": 0,
+          "color": { "mode": "fixed", "fixedColor": "#dcdff0" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#dcdff0", "value": null }] },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "rimworld_trade_silver_total",
+          "legendFormat": "Silver",
+          "instant": false,
+          "refId": "A"
+        }
+      ]
+    }
+
+  ]
+}
