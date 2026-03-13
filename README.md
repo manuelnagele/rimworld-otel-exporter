@@ -67,15 +67,16 @@ The game tick thread never blocks on network I/O — a dedicated background thre
 
 ## What Gets Exported
 
-### Metrics (30 gauges, collected every export cycle)
+### Metrics (45+ gauges, collected every export cycle)
 
 | Category | Metrics |
 |----------|---------|
-| **Colonists** | Total count by type, mood per colonist, health %, pain level, hediff counts by category, skill levels, need levels, negative thought count |
-| **Resources** | Stockpile quantity per item def, colony wealth by type (items/buildings/pawns/total), food days remaining, silver on hand |
-| **Infrastructure** | Power production/consumption/battery per grid, outdoor and room temperatures, building counts, bed count, active fires, filth count |
+| **Colonists** | Total count by type (free/prisoner/slave/guest), mood, health %, pain, age, hediff counts by category (injury/disease/addiction/implant/chronic), skill levels with passion, need levels, negative thought count, mood break thresholds (minor/major/extreme) |
+| **Resources** | Stockpile quantity per item def with category, colony wealth by type (items/buildings/pawns/total), food days remaining, silver on hand |
+| **Infrastructure** | Power production/consumption/battery per grid, outdoor temp, room min & avg temp by role, room impressiveness by role, building counts by def & category, bed count, fire count, filth count |
 | **Threats** | Storyteller threat points, faction goodwill per faction |
-| **World** | Growing season active, tamed animal count by species, wild animal count by species |
+| **Combat** | Hostile pawns on map, downed colonists, colonists in mental state, drafted colonists, inspired colonists |
+| **World** | Growing season active, game date (year/quadrum/day), tamed & wild animal counts by species, active map conditions (toxic fallout/volcanic winter/etc.), research completed count, current research project progress, caravan count, colony settlement count |
 
 ### Logs (event-driven, via Harmony patches)
 
@@ -100,20 +101,23 @@ The mod itself. A `GameComponent` fires every 15 seconds, runs all metric collec
 
 **36 items** — complete. See [v0.1.0 release](https://github.com/manuelnagele/rimworld-otel-exporter/releases/tag/v0.1.0).
 
+### Phase 1.5 — Expanded Metrics ✅ (new in v0.2.0)
+Extended all five collectors with 15+ additional metrics: game date (year/quadrum/day), full combat state (hostile pawns, downed, drafted, inspired, mental breaks), active map conditions as labeled gauges, research progress tracking, world exploration state (caravans, settlements), per-role room temperature (min & avg) and impressiveness, per-colonist age. See [v0.2.0 release](https://github.com/manuelnagele/rimworld-otel-exporter/releases/tag/v0.2.0).
+
 ### Phase 2 — OTLP Gateway Connection
 Configuring and validating the connection between the mod and your Grafana infrastructure. Covers auth (Bearer token / API key), Mimir/Loki tenant headers, smoke testing with `curl`/`otel-cli`, and the choice between direct gateway or local Alloy relay.
 
 **12 items** covering: endpoint auth, tenant config, schema design decisions, metric naming convention, Loki label strategy.
 
-### Phase 3 — Grafana Dashboard
-A full dashboard with 32 panels across 6 rows. Loki annotations overlay game events on every time series panel simultaneously — raids visible on the wealth graph, deaths on the mood graph. Dashboard variables let you switch between campaigns.
+### Phase 3 — Grafana Dashboard ✅ (new in v0.2.0)
+A production-ready dashboard suite of four files. Loki annotations overlay game events on every time series panel simultaneously — raids visible on the wealth graph, deaths on the mood graph. Dashboard variables let you switch between campaigns and drill into individual colonists.
 
-**32 items** covering: Overview, Colonists, Economy, Infrastructure, Threats & Events, Research & World rows.
+**4 dashboards** — complete. See `grafana/` directory.
 
 ### Phase 4 — Packaging & Docs
-Steam Workshop publication, GitHub releases with checksums, README metric dictionary, exported dashboard JSON, unit tests for serialization, and performance profiling to confirm < 0.1ms tick overhead.
+Steam Workshop publication, campaign ID separation for multi-save tracking, dashboard verification against in-game reality, testing against common mod combinations (Combat Extended, Vanilla Expanded, Biotech, Anomaly), and performance profiling.
 
-**8 items** covering: distribution, testing against common mod combinations (Combat Extended, Vanilla Expanded, Biotech, Anomaly), and reliability tooling.
+**10 items** covering: distribution, reliability, and usability validation.
 
 ---
 
@@ -153,9 +157,16 @@ Run [Grafana Alloy](https://grafana.com/docs/alloy/latest/) locally. The mod sen
 Once metrics are flowing:
 
 1. In Grafana: **Dashboards → Import**
-2. Upload `grafana/colony-overview.json` from this repo (or paste the Grafana.com dashboard ID once published)
-3. Select your Mimir datasource for metrics and Loki datasource for logs
+2. Upload from the `grafana/` directory in this repo — start with `rimworld-colony-v2.json` (main hub), then import the three drilldowns
+3. Select your Mimir/Prometheus datasource for metrics and Loki datasource for logs
 4. Set the `$colony` variable to your colony name
+
+| File | Purpose |
+|------|---------|
+| `rimworld-colony-v2.json` | **Colony Command Center** — main hub, all vital signs on one screen |
+| `rimworld-colonist.json` | Per-colonist drilldown — full mood/health/skills/needs history |
+| `rimworld-economy.json` | Economy deep-dive — stockpile trends, wealth composition, food runway |
+| `rimworld-threats.json` | Combat & threats — threat budget, faction goodwill, event log |
 
 ---
 
@@ -199,11 +210,14 @@ The build automatically copies all required runtime DLLs to `Assemblies/`:
 - [x] OTLP transport layer (serializer, sender, queue with backoff + circuit breaker)
 - [x] ModSettings UI (endpoint, auth, interval, per-category toggles, live status)
 - [x] GameComponent heartbeat
-- [x] Metric collectors — colonists, resources, infrastructure, threats, world (30 metrics)
+- [x] Metric collectors — 45+ metrics across colonists, resources, infrastructure, combat, world
 - [x] Harmony event patches — incidents, deaths, research, mental breaks, trades, relationships
 - [x] Unit tests (12/12 passing)
-- [x] v0.1.0 release published
-- [ ] Grafana dashboard JSON (`grafana/colony-overview.json`)
+- [x] Grafana dashboard suite — Colony Command Center + 3 drilldowns (`grafana/`)
+- [x] v0.1.0 release (Phase 1 — mod core)
+- [x] v0.2.0 release (expanded metrics + dashboard suite)
+- [ ] Per-save campaign ID for multi-playthrough separation
+- [ ] Dashboard verification against in-game reality
 - [ ] Steam Workshop publication
 
 See [`CLAUDE.md`](CLAUDE.md) for the full implementation checklist and technical reference.
