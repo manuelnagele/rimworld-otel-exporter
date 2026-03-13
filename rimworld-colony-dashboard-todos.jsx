@@ -577,6 +577,16 @@ const PHASES = [
             text: "Profile tick performance with RimWorld dev tools — verify < 0.1ms overhead when not exporting",
             detail: "Enable Development Mode, use the tick profiler. The GameComponentTick path when not on export interval should be negligible. Export is async so doesn't block ticks. Test with large colony: 20+ colonists, 2000+ item stockpile.",
           },
+          {
+            id: "ops-9",
+            text: "Add per-savegame campaign ID to separate multiple playthroughs in metrics",
+            detail: "Expose a 'Campaign ID' setting (auto-generated UUID on new game, persisted via Scribe). Emit it as a resource attribute (e.g. campaign_id) on every OTLP export. This allows the Grafana $colony variable to distinguish multiple simultaneous or sequential saves — colony wealth from Run A and Run B won't merge into the same time series. Surface it in Mod Settings so users can rename it (e.g. 'iron-man-2025') for readable dashboard labels.",
+          },
+          {
+            id: "ops-10",
+            text: "Verify Grafana dashboard visualizations with common sense strategies",
+            detail: "Walk through each panel with a real (or replayed) session and confirm: (1) Stat panels match in-game values at the same moment. (2) Time series trends make intuitive sense — wealth rises after mining, drops after raids. (3) Mood dips are visible in the chart at the same tick a mental break fires. (4) Annotations from Loki align with the metric spikes they caused. (5) Food days countdown tracks reality — compare to manual calculation. (6) Power balance goes negative exactly when a blackout happens. (7) Threat points curve rises with wealth and resets after a raid. Document any panel that consistently misleads or needs query adjustment.",
+          },
         ],
       },
     ],
