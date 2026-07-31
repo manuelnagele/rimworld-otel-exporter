@@ -4,103 +4,951 @@
       "name": "DS_PROMETHEUS",
       "label": "Prometheus",
       "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
+      "pluginId": "prometheus"
     },
     {
       "name": "DS_LOKI",
       "label": "Loki",
       "type": "datasource",
-      "pluginId": "loki",
-      "pluginName": "Loki"
+      "pluginId": "loki"
     }
   ],
-  "__requires": [
-    { "type": "grafana",    "id": "grafana",    "name": "Grafana",    "version": "10.0.0" },
-    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
-    { "type": "datasource", "id": "loki",       "name": "Loki",       "version": "1.0.0" }
-  ],
+  "__requires": [],
   "annotations": {
     "list": [
       {
-        "builtIn": 1,
-        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "name": "Annotations & Alerts",
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
         "type": "dashboard"
       },
       {
-        "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+        "name": "Raids & Deaths",
+        "datasource": {
+          "type": "loki",
+          "uid": "${DS_LOKI}"
+        },
         "enable": true,
-        "expr": "{service_name=\"rimworld-colony\"} | json | event_type=~\"incident\"",
-        "hide": false,
-        "iconColor": "#e898a8",
-        "name": "Raids",
-        "step": "60s",
-        "titleFormat": "{{body}}",
-        "tagKeys": "event_type"
+        "iconColor": "red",
+        "target": {
+          "expr": "{service_name=\"rimworld-colony\"} | run=~\"$run\" | event_type=~\"incident|death\""
+        },
+        "titleFormat": "{{event_type}}"
       },
       {
-        "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
-        "enable": true,
-        "expr": "{service_name=\"rimworld-colony\"} | json | event_type=\"death\"",
-        "hide": false,
-        "iconColor": "#c0392b",
-        "name": "Deaths",
-        "step": "60s",
-        "titleFormat": "{{body}}",
-        "tagKeys": "event_type"
-      },
-      {
-        "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
-        "enable": true,
-        "expr": "{service_name=\"rimworld-colony\"} | json | event_type=\"mental_break\"",
-        "hide": false,
-        "iconColor": "#d4b896",
         "name": "Mental Breaks",
-        "step": "60s",
-        "titleFormat": "{{body}}",
-        "tagKeys": "event_type"
+        "datasource": {
+          "type": "loki",
+          "uid": "${DS_LOKI}"
+        },
+        "enable": true,
+        "iconColor": "orange",
+        "target": {
+          "expr": "{service_name=\"rimworld-colony\"} | run=~\"$run\" | event_type=~\"mental_break\""
+        },
+        "titleFormat": "{{event_type}}"
+      },
+      {
+        "name": "Research",
+        "datasource": {
+          "type": "loki",
+          "uid": "${DS_LOKI}"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "target": {
+          "expr": "{service_name=\"rimworld-colony\"} | run=~\"$run\" | event_type=~\"research\""
+        },
+        "titleFormat": "{{event_type}}"
       }
     ]
   },
-  "description": "RimWorld combat and threats drilldown — threat budget, faction relations, combat state, and event log.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
   "links": [
     {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": true,
-      "title": "Colony Command Center",
-      "tooltip": "Back to main dashboard",
+      "title": "\u2302 Command Center",
       "type": "link",
-      "url": "/d/rimworld-colony-v2"
+      "url": "/d/rimworld-colony-v2",
+      "icon": "external link",
+      "targetBlank": false,
+      "asDropdown": false,
+      "keepTime": true,
+      "includeVars": true,
+      "tags": []
+    },
+    {
+      "title": "Colonists",
+      "type": "link",
+      "url": "/d/rimworld-colonist",
+      "icon": "external link",
+      "targetBlank": false,
+      "asDropdown": false,
+      "keepTime": true,
+      "includeVars": true,
+      "tags": []
+    },
+    {
+      "title": "Economy",
+      "type": "link",
+      "url": "/d/rimworld-economy",
+      "icon": "external link",
+      "targetBlank": false,
+      "asDropdown": false,
+      "keepTime": true,
+      "includeVars": true,
+      "tags": []
+    },
+    {
+      "title": "Threats",
+      "type": "link",
+      "url": "/d/rimworld-threats",
+      "icon": "external link",
+      "targetBlank": false,
+      "asDropdown": false,
+      "keepTime": true,
+      "includeVars": true,
+      "tags": []
     }
   ],
-  "refresh": "15s",
+  "panels": [
+    {
+      "id": 48,
+      "type": "stat",
+      "title": "Raid",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max(rimworld_raid_active{run=~\"$run\"})",
+          "refId": "A",
+          "editorMode": "code",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Clear",
+                  "color": "green"
+                },
+                "1": {
+                  "text": "UNDER ATTACK",
+                  "color": "red"
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 49,
+      "type": "stat",
+      "title": "Threat Pts",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 3,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max(rimworld_storyteller_threat_points{run=~\"$run\"})",
+          "refId": "A",
+          "editorMode": "code",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 800
+              },
+              {
+                "color": "red",
+                "value": 2000
+              }
+            ]
+          },
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 50,
+      "type": "stat",
+      "title": "Hostiles",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 6,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max(rimworld_hostile_pawns_on_map{run=~\"$run\"})",
+          "refId": "A",
+          "editorMode": "code",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 51,
+      "type": "stat",
+      "title": "Combat-ready",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 9,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max(rimworld_colonists_combat_ready_total{run=~\"$run\"})",
+          "refId": "A",
+          "editorMode": "code",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 2
+              },
+              {
+                "color": "green",
+                "value": 4
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 52,
+      "type": "stat",
+      "title": "Downed",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max(rimworld_colonist_downed_total{run=~\"$run\"})",
+          "refId": "A",
+          "editorMode": "code",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 53,
+      "type": "stat",
+      "title": "Mental breaks",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 15,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max(rimworld_colonist_mental_state_active{run=~\"$run\"})",
+          "refId": "A",
+          "editorMode": "code",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 54,
+      "type": "stat",
+      "title": "Fires",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 18,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max(rimworld_fire_count{run=~\"$run\"})",
+          "refId": "A",
+          "editorMode": "code",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 55,
+      "type": "stat",
+      "title": "Map conditions",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count(rimworld_map_condition_active{run=~\"$run\"}) or vector(0)",
+          "refId": "A",
+          "editorMode": "code",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 56,
+      "type": "timeseries",
+      "title": "Threat budget over campaign",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rimworld_storyteller_threat_points{run=~\"$run\"}",
+          "refId": "A",
+          "editorMode": "code",
+          "legendFormat": "threat points",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": ""
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 57,
+      "type": "timeseries",
+      "title": "Enemies vs combat-ready",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rimworld_hostile_pawns_on_map{run=~\"$run\"}",
+          "refId": "A",
+          "editorMode": "code",
+          "legendFormat": "hostiles",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rimworld_colonists_combat_ready_total{run=~\"$run\"}",
+          "refId": "A",
+          "editorMode": "code",
+          "legendFormat": "combat-ready",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": ""
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 58,
+      "type": "timeseries",
+      "title": "Faction goodwill",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rimworld_faction_goodwill{run=~\"$run\"}",
+          "refId": "A",
+          "editorMode": "code",
+          "legendFormat": "{{faction_name}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": ""
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": -100,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 59,
+      "type": "logs",
+      "title": "Death log \u2014 the memorial",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{service_name=\"rimworld-colony\"} | run=~\"$run\" | event_type=~\"death\"",
+          "refId": "A",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 60,
+      "type": "logs",
+      "title": "Raids & incidents",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{service_name=\"rimworld-colony\"} | run=~\"$run\" | event_type=~\"incident\"",
+          "refId": "A",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    }
+  ],
+  "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["rimworld", "gaming", "homelab", "combat", "threats"],
-  "time": { "from": "now-24h", "to": "now" },
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "RimWorld — Combat & Threats",
-  "uid": "rimworld-threats",
-  "version": 1,
+  "tags": [
+    "rimworld"
+  ],
   "templating": {
     "list": [
       {
         "name": "DS_PROMETHEUS",
         "label": "Prometheus",
         "type": "datasource",
-        "pluginId": "prometheus",
+        "query": "prometheus",
+        "current": {},
         "hide": 0,
         "refresh": 1
       },
@@ -108,749 +956,36 @@
         "name": "DS_LOKI",
         "label": "Loki",
         "type": "datasource",
-        "pluginId": "loki",
+        "query": "loki",
+        "current": {},
         "hide": 0,
         "refresh": 1
+      },
+      {
+        "name": "run",
+        "label": "Run",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "query": "label_values(rimworld_colony_health_score, run)",
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "current": {}
       }
     ]
   },
-  "panels": [
-
-    {
-      "id": 301,
-      "type": "row",
-      "title": "Threat Overview",
-      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
-      "collapsed": false,
-      "panels": []
-    },
-
-    {
-      "id": 302,
-      "type": "stat",
-      "title": "Threat Points",
-      "description": "Current storyteller threat budget. Higher = more dangerous raids.",
-      "gridPos": { "x": 0, "y": 1, "w": 3, "h": 3 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "center",
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#d4b896", "value": 300 },
-              { "color": "#e898a8", "value": 800 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_storyteller_threat_points",
-          "legendFormat": "",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 303,
-      "type": "stat",
-      "title": "Hostile Pawns",
-      "description": "Enemies currently on the map.",
-      "gridPos": { "x": 3, "y": 1, "w": 2, "h": 3 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "center"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#e898a8", "value": 1 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_hostile_pawns_on_map",
-          "legendFormat": "",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 304,
-      "type": "stat",
-      "title": "Downed Colonists",
-      "description": "Colonists currently downed in combat or injury.",
-      "gridPos": { "x": 5, "y": 1, "w": 2, "h": 3 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#e898a8", "value": 1 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colonist_downed_total",
-          "legendFormat": "",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 305,
-      "type": "stat",
-      "title": "Mental Breaks",
-      "description": "Colonists currently in a mental break state.",
-      "gridPos": { "x": 7, "y": 1, "w": 2, "h": 3 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#d4b896", "value": 1 },
-              { "color": "#e898a8", "value": 3 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colonist_mental_state_active",
-          "legendFormat": "",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 306,
-      "type": "stat",
-      "title": "Drafted",
-      "description": "Colonists currently drafted for combat.",
-      "gridPos": { "x": 9, "y": 1, "w": 2, "h": 3 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#d4b896", "value": 1 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colonist_drafted_total",
-          "legendFormat": "",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 307,
-      "type": "stat",
-      "title": "Fire",
-      "description": "Active fires on map.",
-      "gridPos": { "x": 11, "y": 1, "w": 2, "h": 3 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#e898a8", "value": 1 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_fire_count",
-          "legendFormat": "",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 308,
-      "type": "stat",
-      "title": "Map Conditions",
-      "description": "Active environmental conditions (toxic fallout, etc.).",
-      "gridPos": { "x": 13, "y": 1, "w": 3, "h": 3 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#d4b896", "value": 1 },
-              { "color": "#e898a8", "value": 3 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "count(rimworld_map_condition_active) or vector(0)",
-          "legendFormat": "",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 309,
-      "type": "stat",
-      "title": "Research Completed",
-      "description": "Total research projects completed.",
-      "gridPos": { "x": 16, "y": 1, "w": 4, "h": 3 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "center"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "fixed", "fixedColor": "#8ec4a8" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "#8ec4a8", "value": null }] },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_research_completed_total",
-          "legendFormat": "",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 310,
-      "type": "stat",
-      "title": "Settlements",
-      "description": "Total colony settlements on the world map.",
-      "gridPos": { "x": 20, "y": 1, "w": 4, "h": 3 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "fixed", "fixedColor": "#8486d4" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "#8486d4", "value": null }] },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colony_settlements_total",
-          "legendFormat": "",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 311,
-      "type": "row",
-      "title": "Threat Budget",
-      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 1 },
-      "collapsed": false,
-      "panels": []
-    },
-
-    {
-      "id": 312,
-      "type": "timeseries",
-      "title": "Threat Points Full History",
-      "description": "Climbs with wealth, dips after each raid. Annotations show raid and death events.",
-      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 9 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "tooltip": { "mode": "single" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 25,
-            "showPoints": "never",
-            "spanNulls": true,
-            "lineInterpolation": "smooth"
-          },
-          "unit": "short",
-          "min": 0,
-          "color": { "mode": "fixed", "fixedColor": "#e898a8" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#d4b896", "value": 300 },
-              { "color": "#e898a8", "value": 800 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_storyteller_threat_points",
-          "legendFormat": "Threat Budget",
-          "instant": false,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 313,
-      "type": "row",
-      "title": "Combat State",
-      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 1 },
-      "collapsed": false,
-      "panels": []
-    },
-
-    {
-      "id": 314,
-      "type": "timeseries",
-      "title": "Hostile Pawns & Combat State",
-      "description": "Hostile count alongside downed, mental breaks, and drafted colonists.",
-      "gridPos": { "x": 0, "y": 15, "w": 12, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "showPoints": "never",
-            "spanNulls": true,
-            "lineInterpolation": "smooth"
-          },
-          "unit": "short",
-          "min": 0,
-          "color": { "mode": "palette-classic" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "mappings": []
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Hostile Pawns" },
-            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#e898a8" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Downed" },
-            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#d4b896" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Mental Breaks" },
-            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#f08030" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Drafted" },
-            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#82b8c8" } }]
-          }
-        ]
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_hostile_pawns_on_map",
-          "legendFormat": "Hostile Pawns",
-          "instant": false,
-          "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colonist_downed_total",
-          "legendFormat": "Downed",
-          "instant": false,
-          "refId": "B"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colonist_mental_state_active",
-          "legendFormat": "Mental Breaks",
-          "instant": false,
-          "refId": "C"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colonist_drafted_total",
-          "legendFormat": "Drafted",
-          "instant": false,
-          "refId": "D"
-        }
-      ]
-    },
-
-    {
-      "id": 315,
-      "type": "timeseries",
-      "title": "Combat State Composition",
-      "description": "Stacked area showing colonist combat states over time. 0 = peacetime.",
-      "gridPos": { "x": 12, "y": 15, "w": 12, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "lineWidth": 0,
-            "fillOpacity": 60,
-            "showPoints": "never",
-            "spanNulls": true,
-            "lineInterpolation": "smooth",
-            "stacking": { "mode": "normal", "group": "A" }
-          },
-          "unit": "short",
-          "min": 0,
-          "color": { "mode": "palette-classic" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "mappings": []
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Downed" },
-            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#d4b896" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Mental Breaks" },
-            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#e898a8" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Drafted" },
-            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#82b8c8" } }]
-          }
-        ]
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colonist_downed_total",
-          "legendFormat": "Downed",
-          "instant": false,
-          "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colonist_mental_state_active",
-          "legendFormat": "Mental Breaks",
-          "instant": false,
-          "refId": "B"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_colonist_drafted_total",
-          "legendFormat": "Drafted",
-          "instant": false,
-          "refId": "C"
-        }
-      ]
-    },
-
-    {
-      "id": 316,
-      "type": "row",
-      "title": "Faction Relations",
-      "gridPos": { "x": 0, "y": 23, "w": 24, "h": 1 },
-      "collapsed": false,
-      "panels": []
-    },
-
-    {
-      "id": 317,
-      "type": "timeseries",
-      "title": "Faction Goodwill",
-      "description": "Goodwill with all known factions. Below 0 = hostile territory. Sudden drops may precede raids.",
-      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 9 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "min", "max"] }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 0,
-            "showPoints": "never",
-            "spanNulls": true,
-            "lineInterpolation": "smooth"
-          },
-          "unit": "short",
-          "min": -100,
-          "max": 100,
-          "color": { "mode": "palette-classic" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_faction_goodwill",
-          "legendFormat": "{{faction_name}} ({{faction_type}})",
-          "instant": false,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 318,
-      "type": "row",
-      "title": "Active Threats",
-      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 1 },
-      "collapsed": false,
-      "panels": []
-    },
-
-    {
-      "id": 319,
-      "type": "table",
-      "title": "Active Map Conditions",
-      "description": "Environmental conditions currently active on the map.",
-      "gridPos": { "x": 0, "y": 34, "w": 12, "h": 7 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "frameIndex": 0,
-        "showHeader": true,
-        "sortBy": [{ "displayName": "condition_label", "desc": false }]
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#e898a8", "value": 1 }
-            ]
-          },
-          "mappings": [
-            { "type": "value", "options": { "1": { "text": "ACTIVE", "color": "#e898a8" } } },
-            { "type": "value", "options": { "0": { "text": "inactive", "color": "#6b6f9e" } } }
-          ]
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_map_condition_active",
-          "legendFormat": "{{condition_label}}",
-          "instant": true,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 320,
-      "type": "timeseries",
-      "title": "Caravan Activity",
-      "description": "Active caravans over time. Caravans in the field are vulnerable.",
-      "gridPos": { "x": 12, "y": 34, "w": 12, "h": 7 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "options": {
-        "tooltip": { "mode": "single" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 20,
-            "showPoints": "auto",
-            "spanNulls": true,
-            "lineInterpolation": "smooth"
-          },
-          "unit": "short",
-          "min": 0,
-          "color": { "mode": "fixed", "fixedColor": "#82b8c8" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#8ec4a8", "value": null },
-              { "color": "#d4b896", "value": 1 }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "rimworld_caravan_count",
-          "legendFormat": "Caravans",
-          "instant": false,
-          "refId": "A"
-        }
-      ]
-    },
-
-    {
-      "id": 321,
-      "type": "row",
-      "title": "Event Log",
-      "gridPos": { "x": 0, "y": 41, "w": 24, "h": 1 },
-      "collapsed": false,
-      "panels": []
-    },
-
-    {
-      "id": 322,
-      "type": "logs",
-      "title": "Full Event Log",
-      "description": "All colony events from Loki. Filter by event_type label for raids, deaths, mental breaks, trade, and research.",
-      "gridPos": { "x": 0, "y": 42, "w": 24, "h": 16 },
-      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": true,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": true
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
-          "expr": "{service_name=\"rimworld-colony\"} | json",
-          "legendFormat": "",
-          "instant": false,
-          "refId": "A"
-        }
-      ]
-    }
-
-  ]
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "RimWorld \u2014 Combat & Threats",
+  "uid": "rimworld-threats",
+  "version": 1
 }

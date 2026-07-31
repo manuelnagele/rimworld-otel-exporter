@@ -1,0 +1,457 @@
+# RimWorld OTel — Grafana alert pack (unified alerting provisioning).
+#
+# Usage (self-managed Grafana): copy to your Grafana provisioning/alerting/ dir, then
+#   sed -i '' 's/REPLACE_WITH_PROMETHEUS_DATASOURCE_UID/<your-uid>/g' alerts.yaml
+# (find the UID at Connections -> Data sources -> your Prometheus -> the URL /datasources/edit/<uid>).
+# On Grafana Cloud, easiest is to recreate these as UI alert rules or use the Alerting API.
+#
+# Each rule turns one PromQL instant query into a desktop/mobile notification when it crosses
+# a threshold. Wire a contact point (e.g. desktop/ntfy/Telegram) in your notification policy.
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: RimWorld Colony
+    folder: RimWorld
+    interval: 1m
+    rules:
+      - uid: rw-raid-active
+        title: Raid in progress
+        condition: C
+        for: 0m
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+            model:
+              refId: A
+              instant: true
+              editorMode: code
+              expr: 'max(rimworld_raid_active)'
+              datasource:
+                type: prometheus
+                uid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: critical
+          app: rimworld
+        annotations:
+          summary: Hostiles are on the map — a raid is in progress.
+        noDataState: OK
+        execErrState: OK
+        isPaused: false
+      - uid: rw-near-break
+        title: Colonist near mental break
+        condition: C
+        for: 2m
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+            model:
+              refId: A
+              instant: true
+              editorMode: code
+              expr: 'max(rimworld_colonists_near_break_total{severity="minor"})'
+              datasource:
+                type: prometheus
+                uid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: warning
+          app: rimworld
+        annotations:
+          summary: A colonist's mood is within reach of their minor break threshold.
+        noDataState: OK
+        execErrState: OK
+        isPaused: false
+      - uid: rw-bleeding
+        title: Colonist bleeding out
+        condition: C
+        for: 0m
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+            model:
+              refId: A
+              instant: true
+              editorMode: code
+              expr: 'max(rimworld_colonists_bleeding_total)'
+              datasource:
+                type: prometheus
+                uid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: critical
+          app: rimworld
+        annotations:
+          summary: A colonist is bleeding and may die without treatment.
+        noDataState: OK
+        execErrState: OK
+        isPaused: false
+      - uid: rw-tend-needed
+        title: Colonist needs treatment
+        condition: C
+        for: 5m
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+            model:
+              refId: A
+              instant: true
+              editorMode: code
+              expr: 'max(rimworld_colonists_tend_needed_total)'
+              datasource:
+                type: prometheus
+                uid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: warning
+          app: rimworld
+        annotations:
+          summary: A colonist requires medical tending that has not happened.
+        noDataState: OK
+        execErrState: OK
+        isPaused: false
+      - uid: rw-food-low
+        title: Food under 2 days
+        condition: C
+        for: 5m
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+            model:
+              refId: A
+              instant: true
+              editorMode: code
+              expr: 'max(rimworld_food_days_remaining)'
+              datasource:
+                type: prometheus
+                uid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [2]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: warning
+          app: rimworld
+        annotations:
+          summary: Estimated food runway has dropped below 2 days.
+        noDataState: OK
+        execErrState: OK
+        isPaused: false
+      - uid: rw-fire
+        title: Fire on the map
+        condition: C
+        for: 0m
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+            model:
+              refId: A
+              instant: true
+              editorMode: code
+              expr: 'max(rimworld_fire_count)'
+              datasource:
+                type: prometheus
+                uid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: critical
+          app: rimworld
+        annotations:
+          summary: One or more fires are burning.
+        noDataState: OK
+        execErrState: OK
+        isPaused: false
+      - uid: rw-medicine-out
+        title: Out of medicine
+        condition: C
+        for: 5m
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+            model:
+              refId: A
+              instant: true
+              editorMode: code
+              expr: 'sum(rimworld_medicine_total)'
+              datasource:
+                type: prometheus
+                uid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [1]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: warning
+          app: rimworld
+        annotations:
+          summary: No medicine of any tier remains in stock.
+        noDataState: OK
+        execErrState: OK
+        isPaused: false
+      - uid: rw-losing-immunity
+        title: Losing a disease immunity race
+        condition: C
+        for: 10m
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+            model:
+              refId: A
+              instant: true
+              editorMode: code
+              expr: 'max(rimworld_colonists_losing_immunity_total)'
+              datasource:
+                type: prometheus
+                uid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: warning
+          app: rimworld
+        annotations:
+          summary: A colonist's disease severity is outrunning their immunity.
+        noDataState: OK
+        execErrState: OK
+        isPaused: false
+      - uid: rw-battery-low
+        title: Battery reserves low
+        condition: C
+        for: 2m
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+            model:
+              refId: A
+              instant: true
+              editorMode: code
+              expr: 'sum(rimworld_power_grid_battery_stored_wh) / clamp_min(sum(rimworld_power_grid_battery_max_wh), 1)'
+              datasource:
+                type: prometheus
+                uid: REPLACE_WITH_PROMETHEUS_DATASOURCE_UID
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [0.15]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: warning
+          app: rimworld
+        annotations:
+          summary: Stored battery energy is under 15% of capacity — blackout risk.
+        noDataState: OK
+        execErrState: OK
+        isPaused: false

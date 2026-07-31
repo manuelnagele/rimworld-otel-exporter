@@ -143,6 +143,7 @@ namespace RimWorldOtelExporter.Collectors
                         hostile++;
                 }
 
+                int combatReady = 0;
                 foreach (var pawn in map.mapPawns.FreeColonistsSpawned)
                 {
                     if (pawn == null) continue;
@@ -150,6 +151,9 @@ namespace RimWorldOtelExporter.Collectors
                     if (pawn.InMentalState) mentalBreak++;
                     if (pawn.Drafted) drafted++;
                     try { if (pawn.mindState?.inspirationHandler?.Inspired == true) inspired++; } catch { }
+                    // Able to actually fight: conscious, sane, and violence-capable.
+                    if (!pawn.Downed && !pawn.InMentalState && !pawn.WorkTagIsDisabled(WorkTags.Violent))
+                        combatReady++;
                 }
 
                 metrics.Add(GaugeLong("rimworld_hostile_pawns_on_map", hostile, ts));
@@ -157,6 +161,9 @@ namespace RimWorldOtelExporter.Collectors
                 metrics.Add(GaugeLong("rimworld_colonist_mental_state_active", mentalBreak, ts));
                 metrics.Add(GaugeLong("rimworld_colonist_drafted_total", drafted, ts));
                 metrics.Add(GaugeLong("rimworld_colonist_inspired_total", inspired, ts));
+                metrics.Add(GaugeLong("rimworld_colonists_combat_ready_total", combatReady, ts));
+                // Single unmistakable "we are under attack" flag every panel/alert can gate on.
+                metrics.Add(GaugeLong("rimworld_raid_active", hostile > 0 ? 1L : 0L, ts));
             }
             catch { }
         }
@@ -199,7 +206,11 @@ namespace RimWorldOtelExporter.Collectors
                 var current = Traverse.Create(manager).Field("currentProj").GetValue<ResearchProjectDef>();
                 if (current != null)
                 {
-                    float progress = manager.GetProgress(current) / current.baseCost;
+                    // ProgressApparent/CostApparent honor the research-speed/cost multipliers and
+                    // tech-level penalty; baseCost does not, so the old fraction was wrong under
+                    // any non-default research cost setting.
+                    float cost = current.CostApparent;
+                    float progress = cost > 0f ? current.ProgressApparent / cost : 0f;
                     metrics.Add(GaugeDouble("rimworld_research_progress", progress, ts, new[]
                     {
                         Attr("research_def", current.defName),

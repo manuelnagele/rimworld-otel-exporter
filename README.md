@@ -67,16 +67,19 @@ The game tick thread never blocks on network I/O — a dedicated background thre
 
 ## What Gets Exported
 
-### Metrics (45+ gauges, collected every export cycle)
+### Metrics (60+ gauges, collected every export cycle)
+
+Every metric and log also carries `campaign_id` and `colony_name` labels so multiple colonies stay separate and comparable.
 
 | Category | Metrics |
 |----------|---------|
-| **Colonists** | Total count by type (free/prisoner/slave/guest), mood, health %, pain, age, hediff counts by category (injury/disease/addiction/implant/chronic), skill levels with passion, need levels, negative thought count, mood break thresholds (minor/major/extreme) |
-| **Resources** | Stockpile quantity per item def with category, colony wealth by type (items/buildings/pawns/total), food days remaining, silver on hand |
-| **Infrastructure** | Power production/consumption/battery per grid, outdoor temp, room min & avg temp by role, room impressiveness by role, building counts by def & category, bed count, fire count, filth count |
-| **Threats** | Storyteller threat points, faction goodwill per faction |
-| **Combat** | Hostile pawns on map, downed colonists, colonists in mental state, drafted colonists, inspired colonists |
-| **World** | Growing season active, game date (year/quadrum/day), tamed & wild animal counts by species, active map conditions (toxic fallout/volcanic winter/etc.), research completed count, current research project progress, caravan count, colony settlement count |
+| **At a glance** | `colony_health_score` (0–100) + component sub-scores (food/mood/safety/health), `raid_active` flag |
+| **Colonists** | Total count by type (free/prisoner/slave/guest), mood, **mood margin to break**, health %, pain, age, hediff counts by category, skill levels with passion, need levels, negative thought count, mood break thresholds (minor/major/extreme) |
+| **Act-now signals** | Colonists **near break** (minor/major), **bleeding**, **needs-doctor**, **losing a disease immunity race**, **hungry/starving** counts, **combat-ready** count |
+| **Resources** | Stockpile per item def with category, wealth by type, food days remaining, **meal count**, **medicine by tier** (herbal/industrial/ultratech), silver |
+| **Infrastructure** | Power production/consumption/battery per grid, outdoor temp, room min & avg temp by role, room impressiveness, building counts, bed count, fire count, filth count |
+| **Threats** | Storyteller threat points, faction goodwill, hostile pawns, downed/mental-state/drafted/inspired colonists |
+| **World** | Growing season, game date (year/quadrum/day/season), tamed & wild animals by species, active map conditions, research completed + current progress, caravan/settlement count |
 
 ### Logs (event-driven, via Harmony patches)
 
@@ -148,8 +151,8 @@ The mod sends directly to your remote OTLP endpoint. Credentials are stored in m
 Run [Grafana Alloy](https://grafana.com/docs/alloy/latest/) locally. The mod sends to unauthenticated `localhost:4318`; Alloy injects auth and forwards to your gateway. Users configure Alloy, not the mod.
 
 1. Install Alloy on your gaming machine
-2. Use the `config.alloy` from this repo (see `alloy/config.alloy` once created)
-3. In mod settings, leave **OTLP Endpoint** as `http://localhost:4318` (default)
+2. Copy `alloy/.env.example` → `alloy/.env`, fill in your Grafana Cloud OTLP endpoint, instance ID and token, then run `alloy run alloy/config.alloy` (the config receives OTLP on `:4318` and forwards to Grafana Cloud with auth + host enrichment)
+3. In mod settings, leave **OTLP Endpoint** as `http://localhost:4318` (default), leave Auth blank, and click **Test connection**
 4. Alloy handles auth, routing, and attribute enrichment automatically
 
 ### Grafana Dashboard
@@ -163,10 +166,13 @@ Once metrics are flowing:
 
 | File | Purpose |
 |------|---------|
-| `rimworld-colony-v2.json` | **Colony Command Center** — main hub, all vital signs on one screen |
-| `rimworld-colonist.json` | Per-colonist drilldown — full mood/health/skills/needs history |
-| `rimworld-economy.json` | Economy deep-dive — stockpile trends, wealth composition, food runway |
-| `rimworld-threats.json` | Combat & threats — threat budget, faction goodwill, event log |
+| `rimworld-colony-v2.json` | **Colony Command Center** — the second-screen hub: date/season header, colony-health hero tile, high-contrast danger tiles, story graphs, live event feed |
+| `rimworld-colonist.json` | Per-colonist drilldown — mood vs break thresholds, skills, needs, health |
+| `rimworld-economy.json` | Economy deep-dive — wealth composition, medicine, key resources, food runway |
+| `rimworld-threats.json` | Combat & threats — threat budget, enemies vs combat-ready, faction goodwill, death log |
+| `alerts.yaml` | Optional Grafana alert pack — desktop/mobile notifications for raid, near-break, bleeding, low food, fire, out-of-medicine, immunity race, low battery |
+
+Use the **$run** variable to pick one playthrough — each run has a unique `run` label (`"<colony> #<id>"`) so the board stays clean even across colonies with the same name. Set the **$map_image_url** variable to show a daily full-map screenshot in the 🗺 Colony Map panel (see [`docs/map-screenshot.md`](docs/map-screenshot.md) — uses the Progress Renderer mod + `scripts/upload-map-screenshot.sh`). Import `alerts.yaml` via Grafana provisioning (replace the datasource-UID placeholder) or recreate the rules in the UI.
 
 ---
 
@@ -216,8 +222,11 @@ The build automatically copies all required runtime DLLs to `Assemblies/`:
 - [x] Grafana dashboard suite — Colony Command Center + 3 drilldowns (`grafana/`)
 - [x] v0.1.0 release (Phase 1 — mod core)
 - [x] v0.2.0 release (expanded metrics + dashboard suite)
-- [ ] Per-save campaign ID for multi-playthrough separation
-- [ ] Dashboard verification against in-game reality
+- [x] Per-save campaign ID for multi-playthrough separation (v0.3.0-rc1)
+- [x] Load-crash fixes, pause-proof export, auto-recovery, Test-connection button (v0.3.0-rc1)
+- [x] Act-now telemetry (near-break, bleeding, tend, medicine, raid flag, health score) + alert pack (v0.3.0-rc1)
+- [x] Command Center rebuilt for a second screen + Alloy relay config (v0.3.0-rc1)
+- [ ] In-game smoke test of v0.3.0-rc1, then tag v0.3.0
 - [ ] Steam Workshop publication
 
 See [`CLAUDE.md`](CLAUDE.md) for the full implementation checklist and technical reference.

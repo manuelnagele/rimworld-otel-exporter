@@ -24,6 +24,8 @@ namespace RimWorldOtelExporter
         [Unsaved] public bool LastExportSuccess = false;
         [Unsaved] public int LastPayloadBytes = 0;
         [Unsaved] public string LastError = "";
+        [Unsaved] public string TestStatus = "";
+        [Unsaved] public bool TestRunning = false;
 
         public override void ExposeData()
         {
@@ -57,10 +59,13 @@ namespace RimWorldOtelExporter
             var listing = new Listing_Standard();
             listing.Begin(inRect);
 
-            listing.Label("OTLP Endpoint");
+            listing.Label($"RimWorld OTel Exporter  v{ModInfo.Version}");
+            listing.GapLine();
+
+            listing.Label("OTLP Endpoint (base URL, e.g. http://localhost:4318)");
             Settings.OtlpEndpoint = listing.TextEntry(Settings.OtlpEndpoint);
 
-            listing.Label("Authorization Header (e.g. Bearer glc_eyJ...)");
+            listing.Label("Authorization Header (e.g. Bearer glc_eyJ...) — leave blank for a local Alloy relay");
             Settings.AuthHeader = listing.TextEntry(Settings.AuthHeader);
 
             listing.Label("Org ID (X-Scope-OrgID)");
@@ -78,24 +83,69 @@ namespace RimWorldOtelExporter
             listing.CheckboxLabeled("World & Threats", ref Settings.EnableWorld);
 
             listing.GapLine();
-            listing.Label("Export status:");
 
-            if (Settings.LastExportTime == DateTime.MinValue)
+            // Test connection — validates endpoint/auth/tenant without waiting for the export cycle.
+            if (Settings.TestRunning)
+            {
+                listing.Label("  Testing connection…");
+            }
+            else if (listing.ButtonText("Test connection"))
+            {
+                // Persist current field values first so the test uses what's on screen.
+                Settings.Write();
+                OtelExporterCore.RunConnectionTest(Settings);
+            }
+            if (!string.IsNullOrEmpty(Settings.TestStatus))
+                listing.Label("  " + Settings.TestStatus);
+
+            listing.GapLine();
+            listing.Label("Export status:");
+            DrawStatus(listing);
+
+            listing.End();
+        }
+
+        private void DrawStatus(Listing_Standard listing)
+        {
+            if (Settings.LastExportTime == DateTime.MinValue && string.IsNullOrEmpty(Settings.LastError))
             {
                 listing.Label("  No export yet.");
             }
-            else
+            else if (Settings.LastExportSuccess)
             {
                 double ago = (DateTime.UtcNow - Settings.LastExportTime).TotalSeconds;
-                string status = Settings.LastExportSuccess
-                    ? $"  Last export: {ago:F0}s ago  ({Settings.LastPayloadBytes} bytes)"
-                    : $"  FAILED: {Settings.LastError}";
-                listing.Label(status);
+                listing.Label($"  OK — last export {ago:F0}s ago ({Settings.LastPayloadBytes} bytes)");
+            }
+            else
+            {
+                listing.Label($"  FAILED: {Settings.LastError}");
             }
 
-            listing.End();
+            var q = OtelExporterCore.Queue;
+            if (q != null)
+            {
+                if (q.IsOffline)
+                {
+                    double wait = (q.NextRetryUtc - DateTime.UtcNow).TotalSeconds;
+                    listing.Label($"  Paused after {q.ConsecutiveFailures} failures — auto-retry in {Math.Max(0, wait):F0}s (or close this window to retry now).");
+                }
+                else if (q.ConsecutiveFailures > 0)
+                {
+                    listing.Label($"  Retrying — {q.ConsecutiveFailures} consecutive failure(s).");
+                }
+                if (q.QueueDepth > 0)
+                    listing.Label($"  Pending payloads in queue: {q.QueueDepth}");
+            }
+        }
 
-            // Always re-apply config on settings window draw (settings re-save resets circuit breaker)
+        /// <summary>
+        /// Called when the settings window closes (Accept). Re-apply auth/tenant headers and clear
+        /// the circuit breaker here rather than every draw frame (the old per-frame reconfigure
+        /// raced the export thread).
+        /// </summary>
+        public override void WriteSettings()
+        {
+            base.WriteSettings();
             OtelExporterCore.Sender?.Configure(Settings.AuthHeader, Settings.OrgId);
             OtelExporterCore.Queue?.ResetCircuitBreaker();
         }

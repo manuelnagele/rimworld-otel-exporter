@@ -1,0 +1,64 @@
+// RimWorld OTel Exporter — local Alloy relay → Grafana Cloud
+// ---------------------------------------------------------------------------
+// Topology: RimWorld mod  --OTLP/HTTP (no auth)-->  this Alloy  --OTLP/HTTP (auth)-->  Grafana Cloud
+//
+// The mod posts to http://localhost:4318 with NO credentials; Alloy adds auth and
+// forwards everything to the Grafana Cloud OTLP gateway (which fans out to Mimir + Loki).
+// Keeping it OTLP end-to-end means metric names are ingested verbatim — no Prometheus
+// name-mangling — so they match the dashboards exactly.
+//
+// Requires Grafana Alloy >= 1.0. Set these environment variables before `alloy run`:
+//   GRAFANA_CLOUD_OTLP_ENDPOINT  e.g. https://otlp-gateway-prod-us-east-0.grafana.net/otlp
+//   GRAFANA_CLOUD_INSTANCE_ID    your numeric stack/instance id (the OTLP "username")
+//   GRAFANA_CLOUD_API_TOKEN      an access policy token with metrics:write + logs:write
+// See alloy/.env.example. Run with:  alloy run alloy/config.alloy
+// ---------------------------------------------------------------------------
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// 1) Receive OTLP from the mod on localhost:4318 (HTTP: /v1/metrics, /v1/logs).
+otelcol.receiver.otlp "rimworld" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    metrics = [otelcol.processor.resourcedetection.default.input]
+    logs    = [otelcol.processor.resourcedetection.default.input]
+  }
+}
+
+// 2) Enrich with host.name / os.type so you can tell which machine a colony ran on.
+otelcol.processor.resourcedetection "default" {
+  detectors = ["env", "system"]
+  system {
+    hostname_sources = ["os"]
+  }
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+  }
+}
+
+// 3) Batch for efficient upload.
+otelcol.processor.batch "default" {
+  output {
+    metrics = [otelcol.exporter.otlphttp.grafanacloud.input]
+    logs    = [otelcol.exporter.otlphttp.grafanacloud.input]
+  }
+}
+
+// 4) Auth + export to the Grafana Cloud OTLP gateway.
+otelcol.auth.basic "grafanacloud" {
+  username = sys.env("GRAFANA_CLOUD_INSTANCE_ID")
+  password = sys.env("GRAFANA_CLOUD_API_TOKEN")
+}
+
+otelcol.exporter.otlphttp "grafanacloud" {
+  client {
+    endpoint = sys.env("GRAFANA_CLOUD_OTLP_ENDPOINT")
+    auth     = otelcol.auth.basic.grafanacloud.handler
+  }
+}

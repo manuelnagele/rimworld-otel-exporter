@@ -76,7 +76,40 @@ namespace RimWorldOtelExporter.Transport
             resource.Attributes.Add(Attr("storyteller.name", attrs.StorytellerName));
             resource.Attributes.Add(Attr("difficulty.label", attrs.DifficultyLabel));
             resource.Attributes.Add(Attr("mod.version", attrs.ModVersion));
+            // Stable per-save identity: gives every campaign a distinct `instance` in Prometheus
+            // (prevents cross-colony series collisions) and an unambiguous target_info join key.
+            if (!string.IsNullOrEmpty(attrs.InstanceId))
+                resource.Attributes.Add(Attr("service.instance.id", attrs.InstanceId));
+            if (!string.IsNullOrEmpty(attrs.CampaignId))
+                resource.Attributes.Add(Attr("campaign.id", attrs.CampaignId));
             return resource;
+        }
+
+        /// <summary>
+        /// Append the same attributes to every datapoint of every metric. Resource attributes
+        /// (colony.name, campaign.id) do NOT become per-series Prometheus labels on most OTLP
+        /// gateways — only target_info gets them — so low-cardinality identity labels
+        /// (campaign_id, colony_name) must be emitted as DATAPOINT attributes to be filterable.
+        /// </summary>
+        public static void AddCommonAttributes(IEnumerable<Metric> metrics, params KeyValue[] common)
+        {
+            if (common == null || common.Length == 0) return;
+            foreach (var m in metrics)
+            {
+                if (m.Gauge == null) continue;
+                foreach (var dp in m.Gauge.DataPoints)
+                    foreach (var kv in common)
+                        dp.Attributes.Add(kv.Clone());
+            }
+        }
+
+        /// <summary>Append the same attributes to every log record (structured metadata in Loki).</summary>
+        public static void AddCommonAttributes(IEnumerable<LogRecord> logs, params KeyValue[] common)
+        {
+            if (common == null || common.Length == 0) return;
+            foreach (var lr in logs)
+                foreach (var kv in common)
+                    lr.Attributes.Add(kv.Clone());
         }
 
         // ── Metric builders ──────────────────────────────────────────────────
@@ -163,5 +196,7 @@ namespace RimWorldOtelExporter.Transport
         public string MapSeed = "0";
         public string StorytellerName = "Unknown";
         public string DifficultyLabel = "Unknown";
+        public string CampaignId = "";
+        public string InstanceId = "";
     }
 }

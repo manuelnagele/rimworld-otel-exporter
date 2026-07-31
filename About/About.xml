@@ -3,10 +3,12 @@
   <name>RimWorld OpenTelemetry Exporter</name>
   <author>manuelnagele</author>
   <packageId>manuelnagele.rimworld.otelexporter</packageId>
+  <!-- The shipped DLL is compiled against 1.6 APIs (e.g. PlanetTile) and will hard-fail to
+       load on 1.5. Only claim 1.6 unless version-split assemblies are added via LoadFolders. -->
   <supportedVersions>
-    <li>1.5</li>
     <li>1.6</li>
   </supportedVersions>
+  <modVersion>0.3.0-rc1</modVersion>
   <description>
 Exports real-time colony telemetry via OpenTelemetry (OTLP/HTTP) to Grafana/Mimir/Loki.
 
