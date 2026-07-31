@@ -2,11 +2,16 @@
 # Watch the Progress Renderer output folder and upload the newest full-map PNG to a public URL
 # as a stable "latest.png", so the Grafana "Colony Map" panel can display it from anywhere.
 #
-# Configure via env vars, then run (or run under launchd/systemd/Task Scheduler):
+# Configure either inline or via a config file, then run (directly or under launchd/systemd):
 #
+#   # inline:
 #   SRC_DIR="$HOME/Library/Application Support/RimWorld/RenderProgress" \
 #   UPLOAD_CMD='rclone copyto "$SRC_FILE" r2:my-bucket/rimworld/latest.png' \
 #   scripts/upload-map-screenshot.sh
+#
+#   # or via a config file (what the launchers use), default location:
+#   ~/.config/rimworld-map/uploader.env    (override with MAP_UPLOADER_ENV=/path)
+#   — copy scripts/uploader.env.example there and edit it.
 #
 # UPLOAD_CMD runs with $SRC_FILE set to the newest PNG. Any command works — examples:
 #   rclone:  UPLOAD_CMD='rclone copyto "$SRC_FILE" r2:my-bucket/rimworld/latest.png'
@@ -14,6 +19,13 @@
 #   scp:     UPLOAD_CMD='scp "$SRC_FILE" user@host:/var/www/html/rimworld/latest.png'
 # See docs/map-screenshot.md for the full walkthrough.
 set -euo pipefail
+
+# Load config file if present (lets the launchers run with no inline env).
+CONFIG="${MAP_UPLOADER_ENV:-$HOME/.config/rimworld-map/uploader.env}"
+if [ -f "$CONFIG" ]; then
+  # shellcheck disable=SC1090
+  . "$CONFIG"
+fi
 
 SRC_DIR="${SRC_DIR:?set SRC_DIR to the Progress Renderer output folder}"
 UPLOAD_CMD="${UPLOAD_CMD:?set UPLOAD_CMD (it runs with \$SRC_FILE set to the newest PNG)}"

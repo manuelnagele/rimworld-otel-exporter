@@ -10,8 +10,8 @@ Progress Renderer mod        upload-map-screenshot.sh          Grafana "Colony M
 ```
 
 Because you'll view the dashboard **remotely**, the image has to live at a public URL — a
-local file server on your gaming PC wouldn't be reachable. The steps below use object storage
-(Cloudflare R2 is free and simple), but any host that gives a stable public URL works.
+local file server on your gaming PC wouldn't be reachable. GitHub is the easiest free host (no
+bucket or credentials), but any host that gives a stable HTTPS URL works.
 
 ---
 
@@ -33,33 +33,59 @@ Progress Renderer writes one timestamped PNG per render into that folder.
 > This mod (RimWorld OTel Exporter) already emits the in-game date (`rimworld_game_*`) so the
 > dashboard shows which day the current map corresponds to.
 
-## 2. Get a public URL — Cloudflare R2 (example)
+## 2. Get a public URL for the image
 
-1. Create an R2 bucket (e.g. `rimworld-map`) and enable **public access** (r2.dev URL, or attach a
-   custom domain). You'll get a base URL like `https://pub-xxxx.r2.dev`.
-2. Configure `rclone` once: `rclone config` → new remote `r2`, type **S3**, provider **Cloudflare**,
-   with your R2 access key/secret and endpoint. (`aws s3` or Backblaze B2 work the same way.)
-3. Your image will live at `https://pub-xxxx.r2.dev/rimworld/latest.png`.
+The uploader just needs a **stable HTTPS URL it can overwrite daily** (e.g. `…/latest.png`). Pick one
+host below; each has a ready `UPLOAD_CMD` in `scripts/uploader.env.example`.
 
-Set a short cache lifetime on the object so browsers pick up the daily change (R2: a
-`Cache-Control: public, max-age=60` on upload; the panel also cache-busts via the URL — see step 4).
+### GitHub — recommended (free, no bucket/credentials)
+
+Use a **dedicated public repo** with a single *amended* commit, so git history never grows:
+
+```bash
+gh repo create rimworld-map --public --clone && cd rimworld-map
+cp any.png latest.png && git add latest.png && git commit -qm map && git push -u origin main
+gh auth setup-git      # lets a background `git push` authenticate over HTTPS (no SSH agent needed)
+```
+
+→ URL: `https://raw.githubusercontent.com/<you>/rimworld-map/main/latest.png`
+
+The uploader then runs `cp … && git commit --amend && git push -f`, keeping the repo at exactly one
+commit forever. **No-git variant:** publish as a **release asset** instead
+(`gh release upload map latest.png --clobber`) — nothing enters git history and it only needs `gh`
+(the most robust option for a headless launcher). URL:
+`https://github.com/<you>/rimworld-map/releases/download/map/latest.png`.
+
+### Object storage — Cloudflare R2 / S3 / Backblaze B2
+
+Create a public bucket, configure `rclone` once (`rclone config` → type **S3**, provider **Cloudflare**),
+and the image lives at `https://pub-xxxx.r2.dev/latest.png`. Free tiers are plenty.
+
+### Your own homelab / server
+
+Already run a box with a reverse proxy + TLS? Just `rsync`/`scp` the file into a served folder.
+
+> **Notes:** all of these are HTTPS (required to embed on Grafana Cloud) and world-readable — don't
+> include anything sensitive. `raw.githubusercontent.com`/Pages cache ~5–10 min, which is fine for a
+> daily image (and the panel cache-busts with `?t=${__to}`). Avoid Imgur/ImgBB (a new URL per upload)
+> and committing to your *main* project repo (history bloat — use the dedicated repo or a release asset).
 
 ## 3. Run the uploader
 
-`scripts/upload-map-screenshot.sh` polls the Progress Renderer folder and uploads the newest PNG
-to a stable `latest.png` whenever it changes:
+`scripts/upload-map-screenshot.sh` polls the Progress Renderer folder and runs your `UPLOAD_CMD` on
+the newest PNG whenever it changes. Configure it once via a file:
 
 ```bash
-chmod +x scripts/upload-map-screenshot.sh
+mkdir -p ~/.config/rimworld-map
+cp scripts/uploader.env.example ~/.config/rimworld-map/uploader.env
+# edit that file: set SRC_DIR, and pick one UPLOAD_CMD (GitHub is uncommented by default)
 
-SRC_DIR="$HOME/Library/Application Support/RimWorld/RenderProgress" \
-UPLOAD_CMD='rclone copyto "$SRC_FILE" r2:rimworld-map/rimworld/latest.png --header-upload "Cache-Control: public, max-age=60"' \
-INTERVAL=60 \
-scripts/upload-map-screenshot.sh
+chmod +x scripts/upload-map-screenshot.sh
+scripts/upload-map-screenshot.sh          # foreground; Ctrl-C to stop. For auto-start see step 5.
 ```
 
-Leave it running while you play (background it, or wrap in a `launchd`/`systemd`/Task Scheduler job).
-`$SRC_FILE` is set to the newest PNG for each upload; swap `UPLOAD_CMD` for `aws s3 cp`, `scp`, etc.
+`$SRC_FILE` is set to the newest PNG for each upload. You can also skip the config file and pass
+`SRC_DIR=… UPLOAD_CMD=… scripts/upload-map-screenshot.sh` inline.
 
 ## 4. Point Grafana at it
 
@@ -68,6 +94,36 @@ set it to your public URL, e.g. `https://pub-xxxx.r2.dev/rimworld/latest.png`. S
 
 The Colony Map panel renders `<img src="${map_image_url}?t=${__to}">` — the `?t=` is the dashboard
 end-time, so every dashboard refresh re-fetches the image and you always see the latest day.
+
+## 5. Run it automatically (launcher)
+
+So you don't have to start the uploader by hand each session. Both launchers read config from
+`~/.config/rimworld-map/uploader.env` (step 3); run the `sed` from the repo root so `__REPO_DIR__`
+resolves to the correct absolute path.
+
+**macOS (launchd):**
+
+```bash
+sed "s|__REPO_DIR__|$PWD|" scripts/com.rimworld.map-uploader.plist \
+  > ~/Library/LaunchAgents/com.rimworld.map-uploader.plist
+launchctl load ~/Library/LaunchAgents/com.rimworld.map-uploader.plist
+# logs: tail -f /tmp/rimworld-map-uploader.log
+# stop: launchctl unload ~/Library/LaunchAgents/com.rimworld.map-uploader.plist
+```
+
+**Linux (systemd user service):**
+
+```bash
+mkdir -p ~/.config/systemd/user
+sed "s|__REPO_DIR__|$PWD|" scripts/rimworld-map-uploader.service \
+  > ~/.config/systemd/user/rimworld-map-uploader.service
+systemctl --user daemon-reload && systemctl --user enable --now rimworld-map-uploader
+# logs: journalctl --user -u rimworld-map-uploader -f
+# (optional, so it runs even when you're logged out:  loginctl enable-linger "$USER")
+```
+
+On a background launcher there's no SSH agent, so for the GitHub path use the **release-asset**
+`UPLOAD_CMD` or run `gh auth setup-git` (HTTPS) — both authenticate from the stored `gh` token.
 
 ---
 
