@@ -34,8 +34,8 @@ INTERVAL="${INTERVAL:-60}"
 echo "[map-uploader] watching '$SRC_DIR' every ${INTERVAL}s; uploading via: $UPLOAD_CMD"
 last=""
 while true; do
-  # newest .png by mtime (nullglob-safe)
-  newest="$(ls -t "$SRC_DIR"/*.png 2>/dev/null | head -n 1 || true)"
+  # newest image (png/jpg/jpeg) by mtime — Progress Renderer can output either (nullglob-safe)
+  newest="$(ls -t "$SRC_DIR"/*.png "$SRC_DIR"/*.jpg "$SRC_DIR"/*.jpeg 2>/dev/null | head -n 1 || true)"
   if [ -n "$newest" ] && [ "$newest" != "$last" ]; then
     echo "[map-uploader] new map: $newest"
     if SRC_FILE="$newest" bash -c "$UPLOAD_CMD"; then
