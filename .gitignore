@@ -9,6 +9,9 @@ obj/
 # Local Alloy secrets
 alloy/.env
 
+# Packaged release artifacts
+dist/
+
 # IDE
 .vs/
 .vscode/
