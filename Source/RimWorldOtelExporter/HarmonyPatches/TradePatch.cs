@@ -8,19 +8,23 @@ using static RimWorldOtelExporter.Transport.OtlpSerializer;
 
 namespace RimWorldOtelExporter.HarmonyPatches
 {
+    // Real signature: SetupWith(ITrader newTrader, Pawn newPlayerNegotiator, bool giftMode).
+    // Harmony binds postfix params BY NAME, so the param must be 'newTrader', not 'trader'.
+    // Verified against RimWorld 1.6 Assembly-CSharp by reflection.
     [HarmonyPatch(typeof(TradeSession), "SetupWith")]
     public static class TradePatch
     {
-        public static void Postfix(ITrader trader)
+        public static void Postfix(ITrader newTrader, bool giftMode)
         {
             if (!OtelExporterMod.Settings.EnableEvents) return;
-            if (trader == null) return;
+            if (newTrader == null) return;
+            if (giftMode) return; // gift-mode caravans aren't a real trade session
 
             try
             {
-                string traderName = trader.TraderName ?? "unknown";
-                string factionName = trader.Faction?.Name ?? "none";
-                string kind = trader.TraderKind?.defName ?? "unknown";
+                string traderName = newTrader.TraderName ?? "unknown";
+                string factionName = newTrader.Faction?.Name ?? "none";
+                string kind = newTrader.TraderKind?.defName ?? "unknown";
 
                 var attrs = new[]
                 {

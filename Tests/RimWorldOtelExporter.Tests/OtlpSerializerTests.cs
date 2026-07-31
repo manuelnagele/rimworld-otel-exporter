@@ -36,6 +36,69 @@ namespace RimWorldOtelExporter.Tests
             AssertAttr(resource.Attributes, "mod.version", "1.0.0");
         }
 
+        [Test]
+        public void BuildResource_AddsInstanceAndCampaignWhenSet()
+        {
+            var resource = BuildResource(new ResourceAttributes
+            {
+                ModVersion = "0.3.0-rc1",
+                ColonyName = "New Icesheet",
+                CampaignId = "abc123def",
+                InstanceId = "abc123def",
+            });
+
+            AssertAttr(resource.Attributes, "service.instance.id", "abc123def");
+            AssertAttr(resource.Attributes, "campaign.id", "abc123def");
+        }
+
+        [Test]
+        public void BuildResource_OmitsInstanceAndCampaignWhenEmpty()
+        {
+            var resource = BuildResource(TestAttrs); // CampaignId/InstanceId default ""
+            foreach (var kv in resource.Attributes)
+            {
+                Assert.AreNotEqual("service.instance.id", kv.Key);
+                Assert.AreNotEqual("campaign.id", kv.Key);
+            }
+        }
+
+        // ── Common (per-datapoint) attributes ────────────────────────────────
+
+        [Test]
+        public void AddCommonAttributes_AppendsToEveryDatapoint()
+        {
+            var metrics = new List<Metric>
+            {
+                GaugeDouble("rimworld_colonist_mood", 0.8, 0L, new[] { Attr("name", "Emilia") }),
+                GaugeLong("rimworld_colonists_total", 5L, 0L, new[] { Attr("colonist_type", "free") }),
+            };
+
+            AddCommonAttributes(metrics, Attr("campaign_id", "camp1"), Attr("colony_name", "New Icesheet"));
+
+            foreach (var m in metrics)
+            {
+                var dp = m.Gauge.DataPoints[0];
+                AssertAttr(dp.Attributes, "campaign_id", "camp1");
+                AssertAttr(dp.Attributes, "colony_name", "New Icesheet");
+            }
+            // original attributes are preserved alongside the injected ones
+            Assert.AreEqual(3, metrics[0].Gauge.DataPoints[0].Attributes.Count);
+        }
+
+        [Test]
+        public void AddCommonAttributes_AppendsToEveryLogRecord()
+        {
+            var logs = new List<LogRecord>
+            {
+                BuildLogRecord("Raid!", SeverityNumber.Warn, 1L, new[] { Attr("event_type", "incident") }),
+            };
+
+            AddCommonAttributes(logs, Attr("campaign_id", "camp1"));
+
+            AssertAttr(logs[0].Attributes, "campaign_id", "camp1");
+            AssertAttr(logs[0].Attributes, "event_type", "incident");
+        }
+
         // ── Gauge double ─────────────────────────────────────────────────────
 
         [Test]

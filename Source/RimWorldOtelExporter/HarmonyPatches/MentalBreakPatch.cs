@@ -9,17 +9,21 @@ using static RimWorldOtelExporter.Transport.OtlpSerializer;
 
 namespace RimWorldOtelExporter.HarmonyPatches
 {
-    [HarmonyPatch(typeof(Pawn_MindState), "TryStartMentalState")]
+    // TryStartMentalState lives on MentalStateHandler (Pawn.mindState.mentalStateHandler),
+    // NOT on Pawn_MindState. Targeting the wrong type makes AccessTools return null and
+    // the patch throw at load. Verified against RimWorld 1.6 Assembly-CSharp by reflection.
+    [HarmonyPatch(typeof(MentalStateHandler), "TryStartMentalState")]
     public static class MentalBreakPatch
     {
-        public static void Postfix(Pawn_MindState __instance, MentalStateDef stateDef, bool __result)
+        public static void Postfix(MentalStateHandler __instance, MentalStateDef stateDef, bool __result)
         {
             if (!__result) return;
             if (!OtelExporterMod.Settings.EnableEvents) return;
 
             try
             {
-                var pawn = __instance.pawn;
+                // MentalStateHandler.pawn is nonpublic — read it via Traverse (same idiom as RelationsPatch).
+                var pawn = Traverse.Create(__instance).Field("pawn").GetValue<Pawn>();
                 if (pawn?.Faction != Faction.OfPlayer) return;
 
                 string name = pawn.LabelShort ?? pawn.ThingID;

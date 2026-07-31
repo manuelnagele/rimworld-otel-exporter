@@ -1,9 +1,13 @@
 # Build outputs
 Assemblies/*.dll
+Assemblies/*.pdb
 !Assemblies/.gitkeep
 bin/
 obj/
 *.user
+
+# Local Alloy secrets
+alloy/.env
 
 # IDE
 .vs/

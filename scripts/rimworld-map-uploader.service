@@ -1,0 +1,24 @@
+# Linux systemd *user* service for the RimWorld map uploader.
+# Config is read from ~/.config/rimworld-map/uploader.env (copy uploader.env.example there first).
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   sed "s|__REPO_DIR__|$PWD|" scripts/rimworld-map-uploader.service > ~/.config/systemd/user/rimworld-map-uploader.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now rimworld-map-uploader
+#   # logs: journalctl --user -u rimworld-map-uploader -f
+#   # (optional, so it runs without you logged in:  loginctl enable-linger "$USER")
+
+[Unit]
+Description=RimWorld map screenshot uploader
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env bash __REPO_DIR__/scripts/upload-map-screenshot.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

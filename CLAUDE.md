@@ -165,7 +165,15 @@ colony.name          = Faction.OfPlayer.Name
 map.seed             = <seed string>
 storyteller.name     = StorytellerDef.label
 difficulty.label     = DifficultyDef.label
+service.instance.id  = <per-save GUID>        # v0.3.0 — stable per campaign
+campaign.id          = <per-save GUID>        # v0.3.0
 ```
+
+> **Important (v0.3.0):** OTLP *resource* attributes do NOT become per-series Prometheus labels
+> on Grafana Cloud/Mimir — they land on `target_info` only. So low-cardinality identity that must
+> be filterable (`campaign_id`, `colony_name`) is ALSO appended as a **datapoint attribute** to
+> every metric (and as a log-record attribute on every log) via `OtlpSerializer.AddCommonAttributes`.
+> The per-save GUID is persisted with the save in `ColonyTelemetryComponent.ExposeData`.
 
 ---
 
@@ -206,14 +214,39 @@ difficulty.label     = DifficultyDef.label
 | `rimworld_animals_tamed` | Gauge | `animal_def` | Tamed animal count by species |
 | `rimworld_animals_wild` | Gauge | `animal_def`, `is_predator` | Wild animal count by species |
 
+### v0.3.0 additions
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `rimworld_colony_health_score` | Gauge | — | Derived 0–100 "is the colony OK" score |
+| `rimworld_colony_health_score_component` | Gauge | `component` (food/mood/safety/health) | Sub-scores of the above |
+| `rimworld_colonist_mood_margin` | Gauge | `name`, `pawn_id` | Mood minus own minor break threshold (crosses 0 at danger) |
+| `rimworld_colonists_near_break_total` | Gauge | `severity` (minor/major) | Colonists within reach of a break threshold |
+| `rimworld_colonists_bleeding_total` | Gauge | — | Colonists with a positive bleed rate |
+| `rimworld_colony_bleed_rate_total` | Gauge | — | Summed colonist bleed rate |
+| `rimworld_colonists_tend_needed_total` | Gauge | — | Colonists needing tending now |
+| `rimworld_colonists_losing_immunity_total` | Gauge | — | Colonists with immunity behind disease severity |
+| `rimworld_colonists_hungry_total` | Gauge | `level` (hungry/urgent/starving) | Colonists by hunger state |
+| `rimworld_colonists_combat_ready_total` | Gauge | — | Conscious, sane, violence-capable colonists |
+| `rimworld_raid_active` | Gauge | — | 1 while hostiles are on the map |
+| `rimworld_medicine_total` | Gauge | `tier` (herbal/industrial/ultratech) | Medicine stock by tier |
+| `rimworld_food_meals_total` | Gauge | — | Cooked meal count |
+
+**All** metrics additionally carry `campaign_id` and `colony_name` datapoint labels (see resource-attribute note above). Harmony `MentalBreakPatch` targets `MentalStateHandler.TryStartMentalState` (matches this table; earlier code wrongly used `Pawn_MindState`).
+
 ---
 
 ## Loki Log Schema
 
 **Stream labels** (low-cardinality only):
-- `service_name` = `rimworld-colony`
-- `event_type` = `incident` | `death` | `research` | `trade` | `mental_break` | `relationship` | `lifecycle`
+- `service_name` = `rimworld-colony` (mapped from the `service.name` resource attribute)
 - `severity` = `INFO` | `WARN`
+
+> **Correction (v0.3.0):** `event_type` is a **log-record attribute → Loki structured metadata**,
+> NOT a stream label. Filter it *without* a parser and *without* `| json` (the body is plain text):
+> `{service_name="rimworld-colony"} | colony_name=~"$colony" | event_type=~"incident|death"`.
+> `campaign_id` and `colony_name` are likewise structured metadata. A `| json` stage on the plain
+> string body is a no-op that only adds a `__error__` label — don't use it.
 
 **Log line structured fields** (NOT Loki labels — put in attributes):
 - Incidents: `incident_def`, `incident_points`, `incident_faction_name`

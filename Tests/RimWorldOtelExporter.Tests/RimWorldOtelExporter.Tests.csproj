@@ -18,6 +18,7 @@
   <ItemGroup>
     <Compile Include="..\..\Source\RimWorldOtelExporter\Transport\**\*.cs" />
     <Compile Include="..\..\Source\RimWorldOtelExporter\Models\**\*.cs" />
+    <Compile Include="..\..\Source\RimWorldOtelExporter\ModInfo.cs" />
   </ItemGroup>
 
 </Project>

@@ -15,15 +15,22 @@ namespace RimWorldOtelExporter.Collectors
             var map = Find.CurrentMap;
             if (map == null) return;
 
-            CollectStockpile(metrics, map, timestampNanos);
+            CollectStockpileAndFood(metrics, map, timestampNanos);
             CollectWealth(metrics, map, timestampNanos);
-            CollectFood(metrics, map, timestampNanos);
+            CollectMedicine(metrics, map, timestampNanos);
             CollectSilver(metrics, map, timestampNanos);
         }
 
-        private static void CollectStockpile(List<Metric> metrics, Map map, long ts)
+        /// <summary>
+        /// Single pass over ThingDefs — emits stockpile counts and simultaneously accumulates
+        /// food nutrition + meal count (previously scanned the whole DefDatabase twice per cycle).
+        /// </summary>
+        private static void CollectStockpileAndFood(List<Metric> metrics, Map map, long ts)
         {
             var counter = map.resourceCounter;
+            float totalNutrition = 0f;
+            long mealCount = 0;
+
             foreach (var def in DefDatabase<ThingDef>.AllDefs)
             {
                 if (!def.CountAsResource) continue;
@@ -34,14 +41,55 @@ namespace RimWorldOtelExporter.Collectors
 
                 if (count <= 0) continue;
 
-                string category = GetItemCategory(def);
                 metrics.Add(GaugeLong("rimworld_resource_stockpile", count, ts, new[]
                 {
                     Attr("item_def", def.defName),
                     Attr("item_label", def.label ?? def.defName),
-                    Attr("item_category", category)
+                    Attr("item_category", GetItemCategory(def))
                 }));
+
+                if (def.IsIngestible && def.ingestible != null)
+                {
+                    if (def.ingestible.CachedNutrition > 0)
+                        totalNutrition += count * def.ingestible.CachedNutrition;
+
+                    var pref = (int)def.ingestible.preferability;
+                    if (pref >= (int)FoodPreferability.MealAwful && pref <= (int)FoodPreferability.MealLavish)
+                        mealCount += count;
+                }
             }
+
+            metrics.Add(GaugeLong("rimworld_food_meals_total", mealCount, ts));
+            CollectFoodDays(metrics, map, ts, totalNutrition);
+        }
+
+        private static void CollectFoodDays(List<Metric> metrics, Map map, long ts, float totalNutrition)
+        {
+            try
+            {
+                float consumptionPerTick = 0f;
+                // Only mouths that eat from colony stores: colonists, slaves, prisoners, tamed animals.
+                // (The old code summed ALL humanlikes on map, including raiders and visitors.)
+                AddMouths(map.mapPawns.FreeColonistsSpawned, ref consumptionPerTick);
+                AddMouths(map.mapPawns.PrisonersOfColonySpawned, ref consumptionPerTick);
+                try { AddMouths(map.mapPawns.SlavesOfColonySpawned, ref consumptionPerTick); } catch { }
+                AddMouths(map.mapPawns.SpawnedColonyAnimals, ref consumptionPerTick);
+
+                float daysRemaining = consumptionPerTick > 0
+                    ? totalNutrition / (consumptionPerTick * GenDate.TicksPerDay)
+                    : 999f;
+
+                metrics.Add(GaugeDouble("rimworld_food_days_remaining", Math.Round(daysRemaining, 1), ts));
+            }
+            catch { }
+        }
+
+        private static void AddMouths(List<Pawn> pawns, ref float consumptionPerTick)
+        {
+            if (pawns == null) return;
+            foreach (var pawn in pawns)
+                if (pawn?.needs?.food != null)
+                    consumptionPerTick += pawn.needs.food.FoodFallPerTick;
         }
 
         private static void CollectWealth(List<Metric> metrics, Map map, long ts)
@@ -53,40 +101,20 @@ namespace RimWorldOtelExporter.Collectors
             metrics.Add(GaugeDouble("rimworld_colony_wealth", map.wealthWatcher.WealthTotal, ts, new[] { Attr("wealth_type", "total") }));
         }
 
-        private static void CollectFood(List<Metric> metrics, Map map, long ts)
+        private static void CollectMedicine(List<Metric> metrics, Map map, long ts)
         {
+            EmitMedicine(metrics, map, ts, "herbal", ThingDefOf.MedicineHerbal);
+            EmitMedicine(metrics, map, ts, "industrial", ThingDefOf.MedicineIndustrial);
+            EmitMedicine(metrics, map, ts, "ultratech", ThingDefOf.MedicineUltratech);
+        }
+
+        private static void EmitMedicine(List<Metric> metrics, Map map, long ts, string tier, ThingDef def)
+        {
+            if (def == null) return;
             try
             {
-                float totalNutrition = 0f;
-                foreach (var def in DefDatabase<ThingDef>.AllDefs)
-                {
-                    if (def.IsIngestible && def.CountAsResource)
-                    {
-                        int count = map.resourceCounter.GetCount(def);
-                        if (count > 0 && def.ingestible?.CachedNutrition > 0)
-                            totalNutrition += count * def.ingestible.CachedNutrition;
-                    }
-                }
-
-                float totalConsumptionPerTick = 0f;
-                // All humanlike mouths: colonists, prisoners, slaves
-                foreach (var pawn in map.mapPawns.AllHumanlikeSpawned)
-                {
-                    if (pawn.needs?.food != null)
-                        totalConsumptionPerTick += pawn.needs.food.FoodFallPerTick;
-                }
-                // Tamed animals actually eat full rations from stockpiles
-                foreach (var pawn in map.mapPawns.PawnsInFaction(Faction.OfPlayer))
-                {
-                    if (!pawn.RaceProps.Humanlike && pawn.needs?.food != null)
-                        totalConsumptionPerTick += pawn.needs.food.FoodFallPerTick;
-                }
-
-                float daysRemaining = totalConsumptionPerTick > 0
-                    ? totalNutrition / (totalConsumptionPerTick * GenDate.TicksPerDay)
-                    : 999f;
-
-                metrics.Add(GaugeDouble("rimworld_food_days_remaining", Math.Round(daysRemaining, 1), ts));
+                int count = map.resourceCounter.GetCount(def);
+                metrics.Add(GaugeLong("rimworld_medicine_total", count, ts, new[] { Attr("tier", tier) }));
             }
             catch { }
         }

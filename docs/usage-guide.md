@@ -159,8 +159,9 @@ You will see these settings:
 | **Enable Events** | Toggle Harmony patches (raids, deaths, mental breaks, etc.) |
 | **Enable World** | Toggle threat points, animals, growing season |
 
-3. Click **Accept** (or close the settings window) to apply
-4. Watch the **Export status** line at the bottom of the settings — within 15 seconds it should show:
+3. Click **Test connection** — it sends a tiny payload immediately and shows the HTTP status (or the exact error body from Grafana Cloud/Loki), so you don't have to guess whether auth/endpoint are right
+4. Click **Accept** (or close the settings window) to apply
+5. Watch the **Export status** line at the bottom of the settings — within 15 seconds it should show:
    ```
    Last export: 8s ago  (4.2 KB)
    ```
@@ -171,7 +172,7 @@ You will see these settings:
 ## Step 4 — Import the Grafana dashboard
 
 1. In Grafana, click the **+** icon → **Import dashboard**
-2. Upload `grafana/colony-overview.json` from the mod's GitHub repo
+2. Upload the dashboards from the `grafana/` folder — start with `rimworld-colony-v2.json` (the Command Center hub), then the `rimworld-colonist.json`, `rimworld-economy.json`, and `rimworld-threats.json` drilldowns. Optionally import `grafana/alerts.yaml` for desktop/mobile notifications.
 3. On the import screen:
    - Set **Prometheus datasource** to your Mimir / Prometheus datasource
    - Set **Loki datasource** to your Loki datasource

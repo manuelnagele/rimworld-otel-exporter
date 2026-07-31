@@ -31,7 +31,7 @@ namespace RimWorldOtelExporter
             try
             {
                 string gameVersion = RimWorld.VersionControl.CurrentVersionString ?? "unknown";
-                string modVersion = OtelExporterMod.Instance.Content.ModMetaData.ModVersion?.ToString() ?? "0.0.0";
+                string modVersion = ModInfo.Version;
                 string scenario = Find.Scenario?.name ?? "unknown";
                 string seed = Find.World?.info?.seedString ?? "0";
                 string storyteller = Find.Storyteller?.def?.label ?? "unknown";

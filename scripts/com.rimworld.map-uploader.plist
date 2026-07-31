@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS launchd agent for the RimWorld map uploader.
+  Config is read from ~/.config/rimworld-map/uploader.env (copy uploader.env.example there first).
+
+  Install:
+    # replace __REPO_DIR__ with the absolute path to this repo, then:
+    sed "s|__REPO_DIR__|$PWD|" scripts/com.rimworld.map-uploader.plist > ~/Library/LaunchAgents/com.rimworld.map-uploader.plist
+    launchctl load ~/Library/LaunchAgents/com.rimworld.map-uploader.plist
+    # logs: /tmp/rimworld-map-uploader.log   ·   stop: launchctl unload ~/Library/LaunchAgents/com.rimworld.map-uploader.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.rimworld.map-uploader</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__REPO_DIR__/scripts/upload-map-screenshot.sh</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- so git / gh / rclone are found in a login-less launchd context -->
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/rimworld-map-uploader.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/rimworld-map-uploader.log</string>
+</dict>
+</plist>
