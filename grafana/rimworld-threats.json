@@ -752,7 +752,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rimworld_colonists_combat_ready_total{run=~\"$run\"}",
-          "refId": "A",
+          "refId": "B",
           "editorMode": "code",
           "legendFormat": "combat-ready",
           "range": true

@@ -1458,7 +1458,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rimworld_colonists_bleeding_total{run=~\"$run\"}",
-          "refId": "A",
+          "refId": "B",
           "editorMode": "code",
           "legendFormat": "bleeding",
           "range": true
@@ -1469,7 +1469,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rimworld_colonist_downed_total{run=~\"$run\"}",
-          "refId": "A",
+          "refId": "C",
           "editorMode": "code",
           "legendFormat": "downed",
           "range": true
@@ -1480,7 +1480,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rimworld_colonists_hungry_total{run=~\"$run\",level=\"starving\"}",
-          "refId": "A",
+          "refId": "D",
           "editorMode": "code",
           "legendFormat": "starving",
           "range": true
@@ -1625,7 +1625,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum(rimworld_power_grid_consumption_watts{run=~\"$run\"})",
-          "refId": "A",
+          "refId": "B",
           "editorMode": "code",
           "legendFormat": "consumption",
           "range": true
@@ -1636,7 +1636,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum(rimworld_power_grid_battery_stored_wh{run=~\"$run\"})",
-          "refId": "A",
+          "refId": "C",
           "editorMode": "code",
           "legendFormat": "battery stored",
           "range": true
@@ -1713,7 +1713,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum(rimworld_medicine_total{run=~\"$run\"})",
-          "refId": "A",
+          "refId": "B",
           "editorMode": "code",
           "legendFormat": "medicine (all)",
           "range": true

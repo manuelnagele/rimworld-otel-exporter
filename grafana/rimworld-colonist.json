@@ -554,7 +554,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "avg(rimworld_colonist_mood_break_threshold_minor{run=~\"$run\"})",
-          "refId": "A",
+          "refId": "B",
           "editorMode": "code",
           "legendFormat": "minor",
           "range": true
@@ -565,7 +565,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "avg(rimworld_colonist_mood_break_threshold_major{run=~\"$run\"})",
-          "refId": "A",
+          "refId": "C",
           "editorMode": "code",
           "legendFormat": "major",
           "range": true
@@ -576,7 +576,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "avg(rimworld_colonist_mood_break_threshold_extreme{run=~\"$run\"})",
-          "refId": "A",
+          "refId": "D",
           "editorMode": "code",
           "legendFormat": "extreme",
           "range": true
@@ -799,7 +799,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rimworld_colonist_pain{run=~\"$run\",name=\"$colonist\"}",
-          "refId": "A",
+          "refId": "B",
           "editorMode": "code",
           "legendFormat": "pain",
           "range": true
